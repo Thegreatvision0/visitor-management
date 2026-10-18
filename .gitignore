@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+coverage/
+client/dist/
+*.log
+.vercel
+deploy/backups/
+deploy/logs/

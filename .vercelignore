@@ -1,0 +1,9 @@
+# never upload data, secrets or local builds to Vercel
+node_modules
+client/dist
+.env
+server/.env
+deploy
+*.log
+docker-compose.yml
+index visitor managment.html

@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DJJS Noormahal — Sewadar & Accommodation Management (Prototype)</title>
+<style>
+/* =====================================================================
+   DJJS Noormahal — Frontend prototype styles
+   ===================================================================== */
+:root{--bg:#f6f4f0;--card:#fff;--ink:#1f2328;--muted:#6b7280;--line:#e6e1d8;--pri:#b45309;--pri-d:#92400e;--pri-l:#fef3e2;--side:#2a1b12;--side2:#3b281b;
+--ok:#15803d;--okl:#dcfce7;--warn:#a16207;--warnl:#fef3c7;--bad:#b91c1c;--badl:#fee2e2;--info:#1d4ed8;--infol:#dbeafe;--pur:#6d28d9;--purl:#ede9fe;--gray:#4b5563;--grayl:#eceae6;--r:10px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}h3{font-size:15px;margin:0 0 10px}
+.muted{color:var(--muted)}small{color:var(--muted)}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer}
+.ribbon{background:#7c2d12;color:#fff;font-size:12px;padding:5px 12px;text-align:center}
+.shell{display:flex;min-height:calc(100vh - 27px)}
+#side{width:244px;background:var(--side);color:#e9dfd6;flex:none;display:flex;flex-direction:column;position:sticky;top:0;height:calc(100vh - 27px);overflow:auto}
+.brand{padding:16px 16px 12px;border-bottom:1px solid var(--side2)}
+.brand b{display:block;font-size:16px;color:#fff}.brand span{font-size:12px;color:#c9b8a8}
+#side nav{padding:8px}
+.nav{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;background:none;color:#e9dfd6;border-radius:8px;text-align:left}
+.nav:hover{background:var(--side2)}.nav.on{background:var(--pri);color:#fff}
+.nav svg,.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.nav .cnt{margin-left:auto;background:#f59e0b;color:#1f1300;border-radius:99px;font-size:11px;padding:0 7px;font-weight:600}
+.content{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.burger{display:none;background:none;border:1px solid var(--line);border-radius:8px;padding:6px}
+.gsw{position:relative;flex:1;max-width:460px}
+.gsw .ic{position:absolute;left:10px;top:9px;color:var(--muted)}
+.gsw input{width:100%;padding:8px 10px 8px 34px;border:1px solid var(--line);border-radius:8px;background:#faf9f7}
+.dd{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 30px #0002;min-width:300px;max-height:380px;overflow:auto;z-index:50}
+.gsw .dd{left:0;right:auto;width:100%}
+.dd .it{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.dd .it:hover{background:var(--pri-l)}.dd .it:last-child{border-bottom:0}
+.tr{margin-left:auto;display:flex;align-items:center;gap:10px;position:relative}
+.iconbtn{position:relative;background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px}
+.iconbtn .n{position:absolute;top:-6px;right:-6px;background:var(--bad);color:#fff;border-radius:99px;font-size:10px;padding:0 5px}
+.prof{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+.prof small{display:block;line-height:1.1}
+main{padding:20px;max-width:1500px;width:100%}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px;text-align:left;width:100%}
+.stat.click:hover{border-color:var(--pri);box-shadow:0 2px 10px #b4530922}
+.stat .v{font-size:28px;font-weight:700;line-height:1.1}.stat .l{color:var(--muted);font-size:12.5px;margin-top:4px}.stat .s{font-size:12px;margin-top:6px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;color:var(--ink)}
+.btn:hover{background:#faf6f0}.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}.btn.pri:hover{background:var(--pri-d)}
+.btn.bad{background:var(--bad);border-color:var(--bad);color:#fff}.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.sm{padding:3px 9px;font-size:12.5px}.btn[disabled]{opacity:.5;cursor:not-allowed}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.in{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;min-width:140px;max-width:100%}
+.in:focus,.btn:focus-visible{outline:2px solid #f59e0b;outline-offset:1px}
+textarea.in{width:100%;resize:vertical}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:#faf9f7}
+td{padding:9px 10px;border-bottom:1px solid #f0ece5;vertical-align:middle}
+tr:hover td{background:#fffaf2}
+td .btn+.btn{margin-left:4px}
+.b{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.b.ok{background:var(--okl);color:var(--ok)}.b.warn{background:var(--warnl);color:var(--warn)}.b.bad{background:var(--badl);color:var(--bad)}
+.b.info{background:var(--infol);color:var(--info)}.b.pur{background:var(--purl);color:var(--pur)}.b.gray{background:var(--grayl);color:var(--gray)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.av{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px;flex:none;object-fit:cover;vertical-align:middle}
+.who{display:flex;align-items:center;gap:10px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);font-weight:600}
+.tab.on{color:var(--pri);border-color:var(--pri)}.tab .cnt{background:var(--grayl);border-radius:99px;font-size:11px;padding:0 7px;margin-left:4px}
+.bars .row{display:grid;grid-template-columns:150px 1fr 34px;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.bar{height:10px;background:var(--grayl);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pri)}
+.stack{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--grayl);margin:8px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;margin:6px 0}.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.c-Available{background:#86efac}.c-Occupied{background:#f87171}.c-Reserved{background:#fcd34d}.c-Cleaning{background:#93c5fd}
+.alert{border-left:4px solid var(--pri);background:var(--pri-l);padding:9px 12px;border-radius:8px;margin-bottom:8px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.alert.bad{border-color:var(--bad);background:var(--badl)}.alert.info{border-color:var(--info);background:var(--infol)}
+.room{border:1px solid var(--line);border-radius:var(--r);padding:10px;background:#fffdf9}
+.rh{display:flex;justify-content:space-between;margin-bottom:8px;gap:6px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.beds{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.bed{border:1px solid #0001;border-radius:8px;padding:6px 8px;text-align:left;display:flex;flex-direction:column;min-height:46px}
+.bed small{color:#0009;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bed:hover{filter:brightness(.95);outline:2px solid #0003}
+.s-Available{background:#dcfce7}.s-Occupied{background:#fecaca}.s-Reserved{background:#fef3c7}.s-Cleaning{background:#dbeafe}
+.fl{font-weight:700;margin:12px 0 6px;color:var(--pri-d)}
+#overlay{position:fixed;inset:0;background:#1f130c99;display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto;z-index:100}
+#overlay.open{display:flex}
+.mdl{background:#fff;border-radius:12px;width:min(640px,100%);box-shadow:0 20px 60px #0005}
+.mdl.wide{width:min(980px,100%)}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.x{background:none;border:0;font-size:24px;line-height:1;color:var(--muted)}
+.mb{padding:16px 18px}.mf{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;background:#faf9f7;border-radius:0 0 12px 12px}
+form.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}.fld.full{grid-column:1/-1}.fld>span{font-weight:600;font-size:12.5px}.fld .in{width:100%}
+.rq{color:var(--bad);font-style:normal}
+.err{grid-column:1/-1;background:var(--badl);color:var(--bad);padding:8px 12px;border-radius:8px;font-weight:600}
+.note{background:var(--pri-l);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:13px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px;margin-bottom:12px}.kv div span{display:block;font-size:12px;color:var(--muted)}
+.tl{border-left:2px solid var(--line);margin:6px 0 0 6px;padding-left:14px}.tl div{margin:0 0 8px;position:relative;font-size:13px}.tl div::before{content:"";position:absolute;left:-19px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--pri)}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:200}
+.toast{background:#1f2328;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 6px 20px #0004;max-width:360px}.toast.bad{background:var(--bad)}.toast.ok{background:var(--ok)}
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#fef3e2,#f6f4f0)}
+.lg{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;max-width:760px;width:100%;box-shadow:0 12px 40px #0001}
+.ucards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
+.ucard{text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}.ucard:hover{border-color:var(--pri);background:var(--pri-l)}
+.ucard b{display:block}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:var(--grayl);border-radius:6px;padding:2px 8px;font-size:12px}
+/* structure tree + small helpers */
+.tree .trow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border-radius:8px}
+.tree .trow:hover{background:#fffaf2}
+.tree .kids{margin-left:12px;border-left:2px solid var(--line);padding-left:10px}
+.tgl{background:none;border:0;width:24px;height:24px;border-radius:6px;color:var(--muted);flex:none}
+.tgl:hover{background:var(--grayl)}
+.tacts{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+.bchips{display:flex;gap:6px;flex-wrap:wrap;padding:0 8px 10px 8px}
+.bchip{display:inline-flex;align-items:center;gap:5px;border:1px solid #0001;border-radius:8px;padding:2px 3px 2px 8px;font-size:12.5px}
+.bchip small{color:#0009;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bchip button{border:0;background:#0000000f;border-radius:5px;width:20px;height:20px;line-height:1;font-size:12px;padding:0;color:#333}
+.bchip button:hover{background:#0002}
+.chip button{border:0;background:none;color:var(--muted);padding:0 2px;font-size:13px;line-height:1}
+.chip button:hover{color:var(--bad)}
+.btn.dng{color:var(--bad);border-color:#efc4c4;background:#fff}.btn.dng:hover{background:var(--badl)}
+@media(max-width:900px){
+ #side{position:fixed;left:-260px;z-index:90;transition:left .2s;top:27px;height:calc(100vh - 27px)}#side.open{left:0}
+ .burger{display:block}.prof .t{display:none}main{padding:14px}form.f2{grid-template-columns:1fr}.bars .row{grid-template-columns:110px 1fr 30px}
+}
+@media print{#side,.top,.ribbon,.acts,.filters,.tabs{display:none!important}.card{border:0}}
+</style>
+</head>
+<body>
+
+<div id="login" hidden></div>
+
+<div id="app" hidden>
+  <div class="ribbon">PROTOTYPE — sample data stored only in this browser (localStorage). Roles are simulated and NOT secure. Do not enter real sewadar records.</div>
+  <div class="shell">
+    <aside id="side">
+      <div class="brand"><b>DJJS Noormahal</b><span>Sewadar &amp; Accommodation</span></div>
+      <nav id="nav"></nav>
+    </aside>
+    <div class="content">
+      <header class="top">
+        <button class="burger" data-act="toggleSide" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <div class="gsw">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3"/></svg>
+          <input id="gs" type="search" placeholder="Search member by ID, name or mobile…" autocomplete="off">
+          <div class="dd" id="gsdd" hidden></div>
+        </div>
+        <div class="tr">
+          <button class="iconbtn" data-act="bell" aria-label="Notifications"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span class="n" id="bellN" hidden></span></button>
+          <div class="dd" id="bellDD" hidden style="right:150px"></div>
+          <button class="prof" data-act="profile"><span class="av" id="pAv" style="background:#b45309"></span><span class="t"><b id="pName"></b><small id="pRole"></small></span></button>
+          <div class="dd" id="profDD" hidden style="min-width:280px"></div>
+        </div>
+      </header>
+      <main id="main"></main>
+    </div>
+  </div>
+</div>
+<div id="overlay"></div>
+<div id="toasts"></div>
+
+<script>
+/* =====================================================================
+   DJJS Noormahal — Sewadar & Accommodation Management (FRONTEND PROTOTYPE)
+
+   IMPORTANT: Everything here runs in the browser only. Data lives in
+   localStorage; "login" and "roles" are demo switches. None of it is
+   secure. For production, replace the Store layer with calls to a backend
+   API (PostgreSQL) that enforces authentication and permissions.
+
+   Suggested future tables: branches, members, registrations (visits),
+   allocations (bed history), duties (sewa history), attendance,
+   sites/buildings/rooms/beds, departments, users/roles, audit_log.
+   ===================================================================== */
+(function(){
+'use strict';
+
+/* ---------- 1. Utilities ---------- */
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=(n,l=2)=>String(n).padStart(l,'0');
+const fmtD=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>fmtD(new Date());
+const addDays=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return fmtD(d)};
+const diffDays=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fd=s=>{if(!s)return '—';const p=s.slice(0,10).split('-');return p[2]+' '+MON[+p[1]-1]+' '+p[0]};
+const fdt=s=>!s?'—':fd(s)+(s.length>10?', '+s.slice(11,16):'');
+const nowLocal=()=>{const d=new Date();return fmtD(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
+const overlaps=(a1,a2,b1,b2)=>a1<=b2&&b1<=a2;
+const ageOf=dob=>{if(!dob)return '';const b=new Date(dob),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a};
+const ucase=s=>s.charAt(0).toUpperCase()+s.slice(1);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- 2. Constants & roles ---------- */
+const TYPES=['Short-Term','Monthly','Long-Term'];
+const STATES_DEF=['Punjab','Delhi','Haryana','Chandigarh','Himachal Pradesh','Jammu & Kashmir','Uttarakhand','Uttar Pradesh','Rajasthan','Maharashtra','Bihar','Madhya Pradesh','Gujarat','West Bengal','Karnataka','Tamil Nadu','Other'];
+const RELS_DEF=['Spouse','Parent','Child','Sibling','Relative','Friend','Other'];
+const SHIFTS_DEF=[{name:'Morning',time:'05:00–13:00'},{name:'Day',time:'09:00–17:00'},{name:'Evening',time:'13:00–21:00'},{name:'Night',time:'21:00–05:00'}];
+/* Editable lists (Admin → Lists & options). These are re-assigned from DB.lists by applyLookups(). */
+let STATES=STATES_DEF.slice(),RELS=RELS_DEF.slice(),SHIFTS=SHIFTS_DEF.map(x=>x.name),SHIFT_LBL={};
+const shiftLbl=x=>SHIFT_LBL[x]||x;
+const ATT=['Present','Absent','Leave','Not Marked'];
+const PURPOSES=['Seva during programme','Seva — langar','Seva — maintenance work','Spiritual stay & seva','Seva — security duty','Seva — cleaning drive'];
+const BADGE={Draft:'gray',Submitted:'info',Approved:'ok',Rejected:'bad','Checked In':'pur','Checked Out':'gray',Available:'ok',Occupied:'bad',Reserved:'warn',Cleaning:'info',
+ Present:'ok',Absent:'bad',Leave:'warn','Not Marked':'gray',Active:'ok',Ended:'gray',Pending:'warn','Short-Term':'info',Monthly:'pur','Long-Term':'warn',Resident:'pur',Overdue:'bad',Expected:'info',Arrived:'ok',Departed:'gray'};
+const badge=s=>`<span class="b ${BADGE[s]||'gray'}">${esc(s)}</span>`;
+
+/* Role → page access. e = view+edit, v = view only. NOT security — demo only. */
+const ROLES={
+ superadmin:{label:'Super Admin / IT Admin',pages:{dashboard:'e',members:'e',branches:'e',prereg:'e',approvals:'e',reception:'e',accommodation:'e',departments:'e',longterm:'e',reports:'e',admin:'e'}},
+ manager:{label:'Noormahal Sewadar Manager',pages:{dashboard:'e',members:'e',branches:'e',prereg:'e',approvals:'e',reception:'v',accommodation:'v',departments:'e',longterm:'e',reports:'v'}},
+ coordinator:{label:'Branch Coordinator',pages:{dashboard:'v',members:'e',branches:'v',prereg:'e',longterm:'v',reports:'v'}},
+ reception:{label:'Reception Staff',pages:{dashboard:'v',members:'e',prereg:'v',reception:'e',accommodation:'v',departments:'v',reports:'v'}},
+ accom:{label:'Accommodation Manager',pages:{dashboard:'v',members:'v',reception:'v',accommodation:'e',longterm:'v',reports:'v'}},
+ supervisor:{label:'Department Supervisor',pages:{dashboard:'v',departments:'e',reports:'v'}},
+ viewer:{label:'Management / Report Viewer',pages:{dashboard:'v',branches:'v',accommodation:'v',longterm:'v',reports:'v'}}
+};
+const ROLE_DEFAULTS=JSON.parse(JSON.stringify(ROLES));
+const USERS_DEF=[
+ {id:'u1',name:'IT Admin (Demo)',role:'superadmin'},
+ {id:'u2',name:'Sewadar Manager (Demo)',role:'manager'},
+ {id:'u3',name:'Coordinator – Ludhiana (Demo)',role:'coordinator',branchName:'Ludhiana'},
+ {id:'u4',name:'Coordinator – Amritsar (Demo)',role:'coordinator',branchName:'Amritsar'},
+ {id:'u5',name:'Reception Staff (Demo)',role:'reception'},
+ {id:'u6',name:'Accommodation Manager (Demo)',role:'accom'},
+ {id:'u7',name:'Supervisor – Security (Demo)',role:'supervisor',deptName:'Security'},
+ {id:'u8',name:'Management Viewer (Demo)',role:'viewer'}
+];
+const NAV=[['dashboard','Dashboard','M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z'],
+ ['members','Member Master','M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75'],
+ ['branches','Branches','M3 21h18M5 21V7l7-4 7 4v14M9 9h2M13 9h2M9 13h2M13 13h2'],
+ ['prereg','Pre-Registration','M9 2h6v4H9zM7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-2M8 12h8M8 16h5'],
+ ['approvals','Approvals','M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3'],
+ ['reception','Reception','M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4'],
+ ['accommodation','Accommodation','M2 20v-8a2 2 0 012-2h16a2 2 0 012 2v8M2 16h20M6 10V7a1 1 0 011-1h4a1 1 0 011 1v3'],
+ ['departments','Sewa Departments','M4 7h16v13H4zM9 7V4h6v3M4 13h16'],
+ ['longterm','Monthly / Long-Term','M3 5h18v16H3zM3 10h18M8 3v4M16 3v4'],
+ ['reports','Reports','M4 20V10M10 20V4M16 20v-8M22 20H2'],
+ ['admin','Admin & Prototype','M12 15a3 3 0 100-6 3 3 0 000 6zM4 12h2M18 12h2M12 4v2M12 18v2']];
+
+/* ---------- 3. State & storage ---------- */
+const KEY='djjs_noormahal_proto_v1',UKEY='djjs_noormahal_proto_user';
+let DB=null,CUR=null;
+const UI={page:'dashboard',f:{},tab:{}};
+const Store={ // swap these for API calls later
+ load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.v===1)return d}}catch(e){}return null},
+ save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){toast('Browser storage is full — remove photos or reset data.','bad')}},
+ reset(){try{localStorage.removeItem(KEY)}catch(e){}}
+};
+const nid=(kind,prefix,len)=>{DB.seq[kind]=(DB.seq[kind]||0)+1;return prefix+pad(DB.seq[kind],len)};
+const who=()=>CUR?CUR.name:'System';
+function log(text){DB.log.unshift({at:nowLocal(),by:who(),text});if(DB.log.length>200)DB.log.length=200}
+function hist(r,text,at){r.history.push({at:at||nowLocal(),by:who(),text})}
+function commit(){Store.save();render()}
+
+/* ---------- 3b. Editable lists, role access, users, id counters ---------- */
+const defaultLists=()=>({states:STATES_DEF.slice(),rels:RELS_DEF.slice(),shifts:SHIFTS_DEF.map(x=>({name:x.name,time:x.time}))});
+function applyLookups(){
+ const L=DB.lists;STATES=L.states.slice();RELS=L.rels.slice();SHIFTS=L.shifts.map(x=>x.name);
+ SHIFT_LBL={};L.shifts.forEach(x=>SHIFT_LBL[x.name]=x.time?`${x.name} (${x.time})`:x.name);
+}
+/** Role access = built-in defaults, or the matrix the admin saved. Dashboard is always visible; Super Admin is always full access. */
+function applyPerms(){
+ Object.keys(ROLES).forEach(r=>{
+  if(r==='superadmin'){ROLES[r].pages=Object.assign({},ROLE_DEFAULTS[r].pages);return}
+  const p=Object.assign({},DB.perms&&DB.perms[r]?DB.perms[r]:ROLE_DEFAULTS[r].pages);
+  delete p.admin;if(!p.dashboard)p.dashboard='v';
+  Object.keys(p).forEach(k=>{if(!p[k])delete p[k]});
+  ROLES[r].pages=p;
+ });
+}
+function defaultUsers(){
+ return USERS_DEF.map(u=>({id:u.id,name:u.name,role:u.role,
+  branchId:u.branchName?((DB.branches.find(b=>b.name===u.branchName)||{}).id||''):'',deptId:u.deptName?((DB.depts.find(d=>d.name===u.deptName)||{}).id||''):''}));
+}
+/** Runs after load / import / seed: fills anything an older saved file lacks and re-syncs the id counters so a new record never reuses an existing id. */
+function migrate(){
+ DB.seq=DB.seq||{};DB.tomb=DB.tomb||{};if(DB.perms===undefined)DB.perms=null;
+ if(!DB.lists)DB.lists=defaultLists();
+ DB.branches.forEach(b=>{if(b.state&&!DB.lists.states.includes(b.state))DB.lists.states.push(b.state)});
+ if(!DB.users||!DB.users.length)DB.users=defaultUsers();
+ [['st',DB.sites,'ST'],['bl',DB.buildings,'BL'],['rm',DB.rooms,'RM'],['bd',DB.beds,'BD'],['br',DB.branches,'BR'],['dp',DB.depts,'DP'],['mem',DB.members,'NM-'],['reg',DB.regs,'PR-'],['al',DB.allocs,'AL'],['du',DB.duties,'DU'],['us',DB.users,'u']]
+  .forEach(([k,list,pre])=>{let mx=DB.seq[k]||0;list.forEach(x=>{const n=parseInt(String(x.id).slice(pre.length),10);if(n>mx)mx=n});DB.seq[k]=mx});
+ applyPerms();applyLookups();
+}
+
+/* ---------- 4. Domain helpers ---------- */
+const byId=(a,id)=>a.find(x=>x.id===id);
+const member=id=>byId(DB.members,id),branch=id=>byId(DB.branches,id),dept=id=>byId(DB.depts,id)||(id&&DB.tomb&&DB.tomb[id]?{id,name:DB.tomb[id]+' (removed)',supervisor:'',active:false,removed:true}:undefined),reg=id=>byId(DB.regs,id);
+const bedO=id=>byId(DB.beds,id),room=id=>byId(DB.rooms,id),bldg=id=>byId(DB.buildings,id),site=id=>byId(DB.sites,id);
+const stayStart=r=>r.approvedFrom||r.arrival,stayEnd=r=>r.approvedTo||r.departure,stayType=r=>r.approvedType||r.type;
+const activeAlloc=regId=>DB.allocs.find(a=>a.regId===regId&&a.active);
+const activeDuty=regId=>DB.duties.find(d=>d.regId===regId&&d.status==='Active');
+const pendingExt=r=>(r.exts||[]).find(e=>e.status==='Pending');
+const bedShort=b=>{const rm=room(b.roomId),bl=bldg(rm.buildingId);return `${bl.name} · ${rm.name} · Bed ${b.label}`};
+const bedPath=b=>{const rm=room(b.roomId),bl=bldg(rm.buildingId),st=site(bl.siteId);return `${st.name} › ${bl.name} › ${rm.floor} Floor › ${rm.name} › Bed ${b.label}`};
+/* A past allocation may point at a bed that was later deleted: its text was saved on the record at deletion time. */
+const allocBedText=a=>bedO(a.bedId)?bedShort(bedO(a.bedId)):(a.bedPath||'Removed bed');
+const mName=id=>{const m=member(id);return m?m.name:'?'};
+const dayOf=s=>s?s.slice(0,10):'';
+
+/* Permissions (demo only) */
+const can=p=>!!(CUR&&ROLES[CUR.role].pages[p]);
+const canEdit=p=>!!(CUR&&ROLES[CUR.role].pages[p]==='e');
+const canDept=id=>canEdit('departments')&&(CUR.role!=='supervisor'||CUR.deptId===id);
+const canEditMember=m=>canEdit('members')&&(CUR.role!=='coordinator'||m.branchId===CUR.branchId);
+/* Data scoping: coordinators see only their branch; supervisors only their department */
+function scopeReg(r){
+ if(CUR.role==='coordinator')return r.branchId===CUR.branchId;
+ if(CUR.role==='supervisor')return DB.duties.some(d=>d.regId===r.id&&d.deptId===CUR.deptId);
+ return true;
+}
+const scopeMember=m=>CUR.role==='coordinator'?m.branchId===CUR.branchId:CUR.role==='supervisor'?DB.regs.some(r=>r.memberId===m.id&&scopeReg(r)):true;
+const regs=()=>DB.regs.filter(scopeReg),members=()=>DB.members.filter(scopeMember);
+
+/* Bed status map: Cleaning > Occupied (checked-in allocation) > Reserved (approved, not yet in) > Available */
+function bedStates(){
+ const m=new Map();
+ DB.beds.forEach(b=>m.set(b.id,{status:b.cleaning?'Cleaning':'Available',alloc:null,reg:null,member:null}));
+ DB.allocs.filter(a=>a.active).forEach(a=>{
+  const s=m.get(a.bedId);if(!s)return;const r=reg(a.regId);
+  s.alloc=a;s.reg=r;s.member=member(a.memberId);
+  if(!byId(DB.beds,a.bedId).cleaning)s.status=r.status==='Checked In'?'Occupied':'Reserved';
+ });
+ return m;
+}
+/* Overlap guard: active allocations of the same bed with intersecting dates */
+const conflicts=(bedId,from,to,ignore)=>DB.allocs.filter(a=>a.active&&a.bedId===bedId&&a.id!==ignore&&overlaps(a.from,a.to,from,to));
+/* A member may not have two overlapping live requests */
+const memberClash=(mid,from,to,ignore)=>DB.regs.find(r=>r.id!==ignore&&r.memberId===mid&&['Submitted','Approved','Checked In'].includes(r.status)&&overlaps(stayStart(r),stayEnd(r),from,to));
+
+/** Allocate a bed to an approved/checked-in stay. Returns an error string or null. */
+function allocate(regId,bedId,from,to,reason){
+ const r=reg(regId),b=bedO(bedId);
+ if(!r||!['Approved','Checked In'].includes(r.status))return 'Only approved members can be allocated accommodation.';
+ if(activeAlloc(regId))return 'This stay already has a bed. Use Transfer instead.';
+ if(!b)return 'Select a bed.';
+ if(!from||!to||to<from)return 'Check the allocation dates.';
+ const early=Math.min(stayStart(r)>dayOf(r.actualIn||'9999')?dayOf(r.actualIn||'9999'):stayStart(r));
+ if(to>stayEnd(r))return `Allocation cannot run past the approved stay end (${fd(stayEnd(r))}). Extend the stay first.`;
+ if(from<(r.actualIn&&dayOf(r.actualIn)<stayStart(r)?dayOf(r.actualIn):stayStart(r)))return `Allocation cannot start before the stay start (${fd(stayStart(r))}).`;
+ if(b.cleaning)return 'This bed is marked for cleaning. Mark it cleaned first.';
+ const c=conflicts(bedId,from,to);
+ if(c.length){const o=c[0];return `Bed already allocated to ${mName(o.memberId)} (${fd(o.from)} – ${fd(o.to)}).`}
+ DB.allocs.push({id:nid('al','AL',5),regId,memberId:r.memberId,bedId,from,to,active:true,reason:reason||'Allocation',createdOn:nowLocal(),by:who()});
+ hist(r,`Bed allocated: ${bedShort(b)} (${fd(from)} – ${fd(to)})`);log(`Bed ${bedShort(b)} allocated to ${mName(r.memberId)}`);
+ return null;
+}
+/** Move a resident to another bed from `date`; the old allocation is kept as history. */
+function transferBed(regId,newBedId,date){
+ const r=reg(regId),old=activeAlloc(regId),nb=bedO(newBedId);
+ if(!old)return 'No current bed to transfer from.';
+ if(!nb)return 'Select the new bed.';
+ if(nb.id===old.bedId)return 'Choose a different bed.';
+ if(!date||date<old.from||date>old.to)return `Transfer date must be within ${fd(old.from)} – ${fd(old.to)}.`;
+ if(nb.cleaning)return 'The new bed is marked for cleaning.';
+ const c=conflicts(newBedId,date,old.to);
+ if(c.length)return `New bed is already allocated to ${mName(c[0].memberId)} (${fd(c[0].from)} – ${fd(c[0].to)}).`;
+ const oldBed=bedO(old.bedId),origTo=old.to;
+ old.active=false;old.endedOn=date;old.endReason='Transferred';old.to=date;
+ if(r.status==='Checked In'&&old.from<=today())oldBed.cleaning=true;
+ DB.allocs.push({id:nid('al','AL',5),regId,memberId:r.memberId,bedId:newBedId,from:date,to:origTo,active:true,reason:'Transfer',createdOn:nowLocal(),by:who()});
+ hist(r,`Bed transfer: ${bedShort(oldBed)} → ${bedShort(nb)} from ${fd(date)}`);log(`Transfer ${mName(r.memberId)} to ${bedShort(nb)}`);
+ return null;
+}
+/** Extend a stay; also stretches the active bed allocation if the bed stays free. */
+function extendStay(regId,newTo,note){
+ const r=reg(regId),end=stayEnd(r),al=activeAlloc(regId);
+ if(!newTo||newTo<=end)return `New end date must be after the current end (${fd(end)}).`;
+ if(al){const c=conflicts(al.bedId,al.from,newTo,al.id);
+  if(c.length)return `The bed is reserved by ${mName(c[0].memberId)} from ${fd(c[0].from)}. Transfer this member to another bed first or choose an earlier date.`}
+ r.approvedTo=newTo;r.departure=newTo;
+ if(al)al.to=newTo;
+ DB.duties.filter(d=>d.regId===regId&&d.status==='Active'&&d.to===end).forEach(d=>d.to=newTo);
+ hist(r,`Stay extended to ${fd(newTo)}${note?' — '+note:''}`);log(`Stay extended: ${mName(r.memberId)} → ${fd(newTo)}`);
+ return null;
+}
+function doCheckIn(regId,dt){
+ const r=reg(regId);
+ if(r.status!=='Approved')return 'Only approved members can be checked in.';
+ if(!dt)return 'Enter the arrival date and time.';
+ r.status='Checked In';r.actualIn=dt;
+ hist(r,`Arrival confirmed at reception (${fdt(dt)})`);log(`Check-in: ${mName(r.memberId)}`);return null;
+}
+function doCheckOut(regId,dt){
+ const r=reg(regId);
+ if(r.status!=='Checked In')return 'This member is not checked in.';
+ if(!dt||dt<r.actualIn)return 'Departure cannot be before arrival.';
+ const d=dayOf(dt);r.status='Checked Out';r.actualOut=dt;
+ const al=activeAlloc(regId),du=activeDuty(regId);
+ r.undo={allocId:al?al.id:null,bedWasCleaning:al?!!bedO(al.bedId).cleaning:false,dutyId:du?du.id:null,dutyTo:du?du.to:null};
+ if(al){al.active=false;al.endedOn=d;al.endReason='Checked out';bedO(al.bedId).cleaning=true}
+ if(du){du.status='Ended';du.endedOn=d;if(du.to>d)du.to=d}
+ hist(r,`Checked out (${fdt(dt)})${al?' — bed marked for cleaning':''}`);log(`Check-out: ${mName(r.memberId)}`);return null;
+}
+/** Undo a wrongly recorded arrival (only while the member is still checked in). */
+function undoCheckIn(regId){
+ const r=reg(regId);if(!r||r.status!=='Checked In')return 'This member is not checked in.';
+ r.status='Approved';delete r.actualIn;hist(r,'Check-in undone — back to approved / expected');log(`Check-in undone: ${mName(r.memberId)}`);return null;
+}
+/** Undo a wrongly recorded departure: member is back in residence; bed and sewa are restored where still possible. */
+function undoCheckOut(regId){
+ const r=reg(regId);if(!r||r.status!=='Checked Out')return 'This visit is not checked out.';
+ const u=r.undo||{},notes=[];
+ const al=u.allocId?byId(DB.allocs,u.allocId):DB.allocs.filter(a=>a.regId===regId&&a.endReason==='Checked out').pop();
+ if(al&&!al.active&&al.endReason==='Checked out'){
+  if(bedO(al.bedId)&&!conflicts(al.bedId,al.from,al.to,al.id).length){al.active=true;delete al.endedOn;delete al.endReason;if(!u.bedWasCleaning)bedO(al.bedId).cleaning=false;notes.push('bed restored')}
+  else notes.push('bed could not be restored — assign a bed again');
+ }
+ const du=u.dutyId?byId(DB.duties,u.dutyId):null;
+ if(du&&du.status==='Ended'){du.status='Active';delete du.endedOn;if(u.dutyTo)du.to=u.dutyTo;notes.push('sewa restored')}
+ r.status='Checked In';delete r.actualOut;delete r.undo;
+ hist(r,`Check-out undone${notes.length?' ('+notes.join(', ')+')':''}`);log(`Check-out undone: ${mName(r.memberId)}`);return null;
+}
+/** Cancel a request that has not arrived yet; any reserved bed / planned sewa is released. */
+function cancelReg(regId,why){
+ const r=reg(regId);if(!r||!['Submitted','Approved'].includes(r.status))return 'Only a request that has not arrived can be cancelled.';
+ const al=activeAlloc(regId);if(al){al.active=false;al.endedOn=today();al.endReason='Request cancelled'}
+ const du=activeDuty(regId);if(du){du.status='Ended';du.endedOn=today()}
+ r.status='Cancelled';hist(r,'Request cancelled'+(why?' — '+why:''));log(`${r.id} cancelled`);return null;
+}
+/** Send an approved (not yet arrived) request back to pending. */
+function revertApproval(regId){
+ const r=reg(regId);if(!r||r.status!=='Approved')return 'Only an approved request that has not arrived can be sent back.';
+ const al=activeAlloc(regId);if(al){al.active=false;al.endedOn=today();al.endReason='Approval reverted'}
+ const du=activeDuty(regId);if(du){du.status='Ended';du.endedOn=today()}
+ r.status='Submitted';['approvedFrom','approvedTo','approvedType','approvedDept','approvedBy'].forEach(k=>delete r[k]);
+ hist(r,'Approval reverted — back to pending');log(`${r.id} approval reverted`);return null;
+}
+/** Permanently remove a request with its bed and sewa records (not allowed while checked in). */
+function deleteReg(regId){
+ const r=reg(regId);if(!r)return 'Request not found.';
+ if(r.status==='Checked In')return 'This member is checked in. Check out (or undo the check-in) first.';
+ DB.allocs=DB.allocs.filter(a=>a.regId!==regId);DB.duties=DB.duties.filter(d=>d.regId!==regId);
+ Object.keys(DB.att).forEach(k=>{if(k.split('|')[1]===regId)delete DB.att[k]});
+ DB.regs=DB.regs.filter(x=>x.id!==regId);log(`Deleted request ${regId}`);return null;
+}
+/** Permanently remove a member and all of their visit / bed / sewa history (blocked while they have a live request). */
+function deleteMember(id){
+ const m=member(id);if(!m)return 'Member not found.';
+ const live=DB.regs.find(r=>r.memberId===id&&['Submitted','Approved','Checked In'].includes(r.status));
+ if(live)return `${m.name} has a live request (${live.id}, ${live.status}). Reject or cancel it, or check the member out, first.`;
+ DB.regs.filter(r=>r.memberId===id).map(r=>r.id).forEach(deleteReg);
+ DB.members=DB.members.filter(x=>x.id!==id);log(`Deleted member ${id} (${m.name})`);return null;
+}
+/** Delete a branch; its members, requests and coordinator users are moved to another branch first. */
+function deleteBranch(id,moveTo){
+ const b=branch(id);if(!b)return 'Branch not found.';
+ const ms=DB.members.filter(m=>m.branchId===id),rs=DB.regs.filter(r=>r.branchId===id);
+ if((ms.length||rs.length)&&!moveTo)return 'Choose a branch to move its members and requests to.';
+ if(moveTo&&(moveTo===id||!branch(moveTo)))return 'Choose a different, valid branch.';
+ ms.forEach(m=>m.branchId=moveTo);rs.forEach(r=>r.branchId=moveTo);
+ DB.users.forEach(u=>{if(u.branchId===id)u.branchId=moveTo||''});
+ DB.branches=DB.branches.filter(x=>x.id!==id);log(`Deleted branch ${b.name}`);return null;
+}
+/** Delete a department (blocked while sewadar are assigned). Past duties keep its name via a tombstone. */
+function deleteDept(id){
+ const d=dept(id);if(!d)return 'Department not found.';
+ const act=DB.duties.filter(x=>x.deptId===id&&x.status==='Active');
+ if(act.length)return `${act.length} sewadar are assigned to ${d.name}. Change or end those duties first.`;
+ DB.tomb[id]=d.name;
+ DB.regs.forEach(r=>{if(r.prefDept===id)r.prefDept='';if(r.approvedDept===id)r.approvedDept=''});
+ DB.users.forEach(u=>{if(u.deptId===id)u.deptId=''});
+ DB.depts=DB.depts.filter(x=>x.id!==id);log(`Deleted department ${d.name}`);return null;
+}
+const dutyOn=(regId,date)=>{const l=DB.duties.filter(d=>d.regId===regId&&d.from<=date&&date<=d.to);return l.find(d=>d.status==='Active')||l[0]};
+const attKey=(date,regId)=>date+'|'+regId;
+const attStatus=(date,regId)=>(DB.att[attKey(date,regId)]||{}).status||'Not Marked';
+function setAtt(date,regId,status){const du=dutyOn(regId,date);if(status==='Not Marked'){delete DB.att[attKey(date,regId)];return}DB.att[attKey(date,regId)]={status,deptId:du?du.deptId:null}}
+const onSite=(r,date)=>r.actualIn&&dayOf(r.actualIn)<=date&&(!r.actualOut||dayOf(r.actualOut)>=date);
+function attPct(regId){let p=0,n=0;Object.keys(DB.att).forEach(k=>{if(k.split('|')[1]===regId){n++;if(DB.att[k].status==='Present')p++}});return n?Math.round(p/n*100):null}
+function giveDuty(regId,o,replace){
+ const r=reg(regId);
+ if(!r||!['Approved','Checked In'].includes(r.status))return 'Only approved members can be assigned sewa.';
+ if(!o.deptId||!o.shift||!o.from||!o.to)return 'Fill in all duty fields.';
+ if(o.to<o.from)return 'Duty end cannot be before start.';
+ if(o.to>stayEnd(r))return `Duty cannot run past the approved stay end (${fd(stayEnd(r))}).`;
+ const cur=activeDuty(regId);
+ if(cur&&!replace)return 'This member already has an active duty. Use Change instead.';
+ if(cur){const dayBefore=addDays(o.from,-1);cur.status='Ended';cur.endedOn=o.from;cur.to=dayBefore<cur.from?cur.from:(dayBefore<cur.to?dayBefore:cur.to)}
+ DB.duties.push({id:nid('du','DU',5),regId,memberId:r.memberId,deptId:o.deptId,shift:o.shift,supervisor:o.supervisor||(dept(o.deptId)||{}).supervisor||'',from:o.from,to:o.to,status:'Active',createdOn:nowLocal(),by:who()});
+ hist(r,`${replace?'Duty changed':'Duty assigned'}: ${dept(o.deptId).name}, ${o.shift} shift`);log(`${replace?'Duty change':'Duty assign'}: ${mName(r.memberId)} → ${dept(o.deptId).name}`);
+ return null;
+}
+
+/* ---------- 5. Sample data (prototype only) ---------- */
+function seed(){
+ const rnd=mulberry32(20261009),pick=a=>a[Math.floor(rnd()*a.length)],ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
+ const t=today(),d=n=>addDays(t,n);
+ DB={v:1,seq:{},branches:[],members:[],regs:[],allocs:[],duties:[],att:{},depts:[],sites:[],buildings:[],rooms:[],beds:[],log:[]};
+ DB.lists=defaultLists();DB.tomb={};DB.perms=null;applyLookups(); // sample data always starts from the default lists
+ const MF='Gurpreet,Harjinder,Manjit,Balwinder,Sukhdev,Jaswant,Kuldeep,Rajinder,Amarjit,Parminder,Tarsem,Satnam,Davinder,Lakhwinder,Ranjit,Mohinder,Baljit,Charanjit,Surinder,Navdeep,Rakesh,Vikram,Sandeep,Pawan,Anil,Deepak,Ajay,Mahesh,Gagandeep,Jagdish'.split(',');
+ const FF='Simran,Harpreet,Manpreet,Jasleen,Kiran,Sunita,Rajni,Paramjit,Amandeep,Navneet,Sarbjit,Gurleen,Pooja,Meena,Anita,Seema,Rekha,Neha,Komal,Ritu'.split(',');
+ const SN='Singh,Sharma,Verma,Gill,Sidhu,Kumar,Bansal,Mehta,Arora,Walia,Bedi,Sethi,Khanna,Chopra,Bajwa,Dhillon,Grewal,Sandhu,Mann,Joshi'.split(',');
+ const used=new Set();
+ const mob=()=>{let s;do{s=pick(['98','97','99','94','88','62'])+pad(ri(0,99999999),8)}while(used.has(s));used.add(s);return s};
+ const cname=()=>{const f=rnd()<.7;return pick(f?MF:FF)+' '+(f?pick(SN):(rnd()<.6?'Kaur':pick(SN)))};
+ /* Branches: 33 Punjab (sample list) + other states */
+ 'Amritsar,Jalandhar,Ludhiana,Patiala,Bathinda,Hoshiarpur,Gurdaspur,Pathankot,Kapurthala,Ferozepur,Faridkot,Moga,Sangrur,Barnala,Mansa,Sri Muktsar Sahib,Fatehgarh Sahib,Rupnagar,Mohali,Nawanshahr,Tarn Taran,Fazilka,Malerkotla,Batala,Phagwara,Khanna,Abohar,Zirakpur,Rajpura,Nabha,Dhuri,Samana,Jagraon'.split(',')
+  .forEach(n=>DB.branches.push({id:nid('br','BR',3),name:n,state:'Punjab',district:n,coordinator:cname(),phone:mob(),sample:true}));
+ [['Delhi (Patel Nagar)','Delhi','New Delhi'],['Karnal','Haryana','Karnal'],['Chandigarh','Chandigarh','Chandigarh'],['Shimla','Himachal Pradesh','Shimla'],['Jammu','Jammu & Kashmir','Jammu'],['Dehradun','Uttarakhand','Dehradun'],['Lucknow','Uttar Pradesh','Lucknow'],['Jaipur','Rajasthan','Jaipur'],['Mumbai','Maharashtra','Mumbai'],['Patna','Bihar','Patna'],['Indore','Madhya Pradesh','Indore'],['Ahmedabad','Gujarat','Ahmedabad']]
+  .forEach(o=>DB.branches.push({id:nid('br','BR',3),name:o[0],state:o[1],district:o[2],coordinator:cname(),phone:mob(),sample:true}));
+ const brByName=n=>DB.branches.find(b=>b.name===n);
+ /* Departments */
+ ['Security','Langar Serving','Langar Cooking','Cleaning / Safai','Kitchen','Maintenance','Stores & Library (Other)'].forEach(n=>DB.depts.push({id:nid('dp','DP',2),name:n,supervisor:cname(),active:true}));
+ const deptIds=DB.depts.map(x=>x.id);
+ /* Accommodation: Site → Building → Floor → Room → Bed */
+ DB.sites.push({id:'ST1',name:'Main Campus'},{id:'ST2',name:'Annexe Campus'});
+ const BL=[['BL1','ST1','Mangal Bhawan',['Ground','First','Second'],'M','Male',4],['BL2','ST1','Shakti Bhawan',['Ground','First','Second'],'S','Female',4],['BL3','ST2','Seva Sadan',['Ground','First'],'V','Any',6]];
+ BL.forEach(b=>{DB.buildings.push({id:b[0],siteId:b[1],name:b[2],floors:b[3]});
+  b[3].forEach((fl,fi)=>{for(let k=1;k<=3;k++){const rid=nid('rm','RM',3);DB.rooms.push({id:rid,buildingId:b[0],floor:fl,name:b[4]+fi+'0'+k,gender:b[5]});
+   for(let j=0;j<(fi===0&&b[0]==='BL3'?6:4);j++)DB.beds.push({id:nid('bd','BD',3),roomId:rid,label:String.fromCharCode(65+j),cleaning:false})}})});
+ const pool={Male:[],Female:[]};
+ DB.beds.forEach(b=>{const g=room(b.roomId).gender;if(g==='Male'||g==='Any')pool.Male.push(b);if(g==='Female'||g==='Any')pool.Female.push(b)});
+ const takeBed=g=>{const b=pool[g==='Female'?'Female':'Male'].shift();if(b){['Male','Female'].forEach(k=>{const i=pool[k].indexOf(b);if(i>=0)pool[k].splice(i,1)})}return b};
+ /* Members */
+ const hoods=['Model Town','Civil Lines','Gandhi Nagar','Rishi Nagar','Shastri Nagar','Sector 15','Guru Nanak Colony'];
+ for(let i=0;i<60;i++){
+  const male=rnd()<.6,br=rnd()<.8?DB.branches[ri(0,32)]:DB.branches[ri(33,DB.branches.length-1)];
+  const name=male?pick(MF)+' '+(rnd()<.5?'Singh':pick(SN)):pick(FF)+' '+(rnd()<.6?'Kaur':pick(SN));
+  DB.members.push({id:nid('mem','NM-',4),name,photo:null,mobile:mob(),dob:ri(1958,2003)+'-'+pad(ri(1,12))+'-'+pad(ri(1,28)),gender:male?'Male':'Female',
+   address:`House ${ri(1,480)}, ${pick(hoods)}, ${br.district}`,state:br.state,district:br.district,branchId:br.id,type:rnd()<.72?'Short-Term':(rnd()<.7?'Monthly':'Long-Term'),
+   emName:cname(),emPhone:mob(),emRel:pick(RELS),createdOn:d(-ri(30,400)),sample:true});
+ }
+ const M=DB.members;
+ const setBr=(i,n)=>{const b=brByName(n);Object.assign(M[i],{branchId:b.id,state:b.state,district:b.district})};
+ [0,1,2,46,47,48,53,56].forEach(i=>setBr(i,'Ludhiana'));[3,4,49,50].forEach(i=>setBr(i,'Amritsar'));
+ const mkReg=(m,o)=>{const r=Object.assign({id:nid('reg','PR-',4),memberId:m.id,branchId:m.branchId,source:'Pre-registration',purpose:pick(PURPOSES),prefDept:pick(deptIds),type:m.type,status:'Draft',remarks:'',history:[],exts:[],createdBy:'Branch Coordinator',createdOn:d(-5)},o);DB.regs.push(r);return r};
+ const H=(r,steps)=>steps.forEach(s=>r.history.push({at:s[0],by:s[1],text:s[2]}));
+ /* A) 24 current residents */
+ for(let i=0;i<24;i++){
+  const m=M[i];
+  if([2,5,9,13].includes(i))m.type='Monthly';else if([7,16].includes(i))m.type='Long-Term';else m.type='Short-Term';
+  let a,e;
+  if(m.type==='Short-Term'){a=-ri(1,8);e=ri(1,6)}else if(m.type==='Monthly'){a=-ri(8,25);e=ri(5,25)}else{a=-ri(40,120);e=ri(30,120)}
+  if([0,1,3].includes(i))e=0;if(i===4)e=-2;if(i===6)e=-1;if(i===2)e=3;if(i===5)e=6;
+  const r=mkReg(m,{status:'Checked In',arrival:d(a),departure:d(e),approvedFrom:d(a),approvedTo:d(e),approvedType:m.type,approvedDept:deptIds[i%7],approvedBy:'Sewadar Manager',actualIn:d(a)+'T'+pad(ri(6,18))+':'+pad(ri(0,59)),createdOn:d(a-6)});
+  H(r,[[r.createdOn+'T10:00','Branch Coordinator','Pre-registration created'],[d(a-5)+'T11:00','Branch Coordinator','Submitted for approval'],[d(a-3)+'T15:30','Sewadar Manager','Approved — forwarded to reception'],[r.actualIn,'Reception Staff','Arrival confirmed at reception']]);
+  const bed=[10,11].includes(i)?null:takeBed(m.gender);
+  if(bed){DB.allocs.push({id:nid('al','AL',5),regId:r.id,memberId:m.id,bedId:bed.id,from:d(a),to:d(e),active:true,reason:'Allocation',createdOn:r.actualIn,by:'Accommodation Manager'});H(r,[[r.actualIn,'Accommodation Manager','Bed allocated: '+bedShort(bed)]])}
+  if(![10,12].includes(i)){
+   const dp=dept(deptIds[i%7]);DB.duties.push({id:nid('du','DU',5),regId:r.id,memberId:m.id,deptId:dp.id,shift:SHIFTS[i%4],supervisor:dp.supervisor,from:d(a),to:d(e),status:'Active',createdOn:r.actualIn,by:'Sewadar Manager'});
+   for(let k=Math.max(a,-6);k<=0;k++){if(k===0&&i%2)continue;const x=rnd();DB.att[attKey(d(k),r.id)]={status:x<.8?'Present':x<.9?'Absent':'Leave',deptId:dp.id}}
+  }
+  if(i===2)r.exts.push({to:d(33),reason:'Seva commitments for Diwali programme',status:'Pending',by:'Branch Coordinator',on:d(-1)+'T10:00'});
+  if(i===7)r.exts.push({to:d(e+60),reason:'Continuing seva in langar department',status:'Pending',by:'Branch Coordinator',on:d(-2)+'T10:00'});
+ }
+ /* B) past visits (history) */
+ const freeBeds=()=>DB.beds.filter(b=>!DB.allocs.some(a=>a.active&&a.bedId===b.id));
+ let fb=freeBeds(),k=0;
+ const past=(m,a,e)=>{const r=mkReg(m,{status:'Checked Out',arrival:d(a),departure:d(e),approvedFrom:d(a),approvedTo:d(e),approvedType:m.type,approvedDept:pick(deptIds),approvedBy:'Sewadar Manager',actualIn:d(a)+'T09:15',actualOut:d(e)+'T'+pad(ri(8,17))+':30',createdOn:d(a-4)});
+  H(r,[[d(a-4)+'T10:00','Branch Coordinator','Pre-registration created'],[d(a-3)+'T10:00','Branch Coordinator','Submitted for approval'],[d(a-2)+'T10:00','Sewadar Manager','Approved'],[r.actualIn,'Reception Staff','Arrival confirmed'],[r.actualOut,'Reception Staff','Checked out']]);
+  const b=fb[(k*5)%fb.length];
+  DB.allocs.push({id:nid('al','AL',5),regId:r.id,memberId:m.id,bedId:b.id,from:d(a),to:d(e),active:false,endedOn:d(e),endReason:'Checked out',reason:'Allocation',createdOn:r.actualIn,by:'Accommodation Manager'});
+  const dp=dept(pick(deptIds));DB.duties.push({id:nid('du','DU',5),regId:r.id,memberId:m.id,deptId:dp.id,shift:pick(SHIFTS),supervisor:dp.supervisor,from:d(a),to:d(e),status:'Ended',endedOn:d(e),createdOn:r.actualIn,by:'Sewadar Manager'});
+  k++;return b};
+ for(let i=24;i<38;i++){const recent=i<28;const a=recent?-ri(3,6):-ri(12,60);const e=recent?(i%2?0:-1):a+ri(2,10);const b=past(M[i],a,e);if(recent)b.cleaning=true}
+ for(let i=0;i<5;i++){const a=-ri(120,200);past(M[i],a,a+ri(2,10))}
+ /* C) approved, awaiting arrival; some with reserved beds */
+ [0,0,0,1,1,1,3,5].forEach((o,j)=>{const i=38+j,m=M[i];if(j===3)m.type='Monthly';
+  const e=m.type==='Monthly'?o+30:o+ri(2,7);
+  const r=mkReg(m,{status:'Approved',arrival:d(o),departure:d(e),approvedFrom:d(o),approvedTo:d(e),approvedType:m.type,approvedDept:pick(deptIds),approvedBy:'Sewadar Manager',createdOn:d(-6)});
+  H(r,[[d(-6)+'T10:00','Branch Coordinator','Pre-registration created'],[d(-5)+'T10:00','Branch Coordinator','Submitted for approval'],[d(-2)+'T16:00','Sewadar Manager','Approved — forwarded to reception']]);
+  if([0,3,6,7].includes(j)){const bed=takeBed(m.gender);DB.allocs.push({id:nid('al','AL',5),regId:r.id,memberId:m.id,bedId:bed.id,from:d(o),to:d(e),active:true,reason:'Allocation',createdOn:d(-1)+'T12:00',by:'Accommodation Manager'});H(r,[[d(-1)+'T12:00','Accommodation Manager','Bed reserved: '+bedShort(bed)]])}});
+ /* D) submitted / draft / rejected */
+ for(let i=46;i<53;i++){const walk=i===52,m=M[i];
+  const r=mkReg(m,{status:'Submitted',arrival:d(walk?0:ri(2,10)),departure:d(walk?4:ri(8,16)),source:walk?'Walk-in':'Pre-registration',createdBy:walk?'Reception Staff':'Branch Coordinator',createdOn:d(-ri(0,3))});
+  H(r,[[r.createdOn+'T10:00',r.createdBy,walk?'Walk-in registered at reception':'Pre-registration created'],[r.createdOn+'T10:30',r.createdBy,'Submitted for approval']])}
+ for(let i=53;i<56;i++){const r=mkReg(M[i],{status:'Draft',arrival:d(ri(10,20)),departure:d(ri(21,26)),createdOn:d(-1)});H(r,[[d(-1)+'T09:00','Branch Coordinator','Draft created']])}
+ for(let i=56;i<58;i++){const r=mkReg(M[i],{status:'Rejected',arrival:d(2),departure:d(6),remarks:i===56?'Dates clash with a major event; kindly re-apply after the 20th.':'Please attach coordinator confirmation and re-submit.',createdOn:d(-4)});
+  H(r,[[d(-4)+'T10:00','Branch Coordinator','Pre-registration created'],[d(-4)+'T11:00','Branch Coordinator','Submitted for approval'],[d(-3)+'T14:00','Sewadar Manager','Rejected — '+r.remarks]])}
+ log('Sample data loaded');migrate();
+ Store.save();
+}
+
+/* ---------- 6. UI primitives ---------- */
+function toast(msg,kind){const el=document.createElement('div');el.className='toast '+(kind||'');el.textContent=msg;$('#toasts').appendChild(el);setTimeout(()=>el.remove(),3800)}
+/* ---- Camera capture (getUserMedia). Falls back to the device camera app / file picker if the camera is blocked or unavailable. ---- */
+let camStream=null;
+function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}const b=$('#camBox');if(b)b.hidden=true}
+/** Downscale an image data-URL to max 240px JPEG so localStorage stays small */
+function shrink(src,cb){const im=new Image();im.onload=()=>{const s=Math.min(1,240/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.75))};im.src=src}
+function startCam(fallback,done){
+ stopCam();
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Camera not available here — choose a photo instead.');fallback();return}
+ navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:640}},audio:false}).then(st=>{
+  camStream=st;const v=$('#camV');v.srcObject=st;$('#camBox').hidden=false;
+  $('#camSnap').onclick=()=>{
+   if(!v.videoWidth){toast('Camera is still starting — try again');return}
+   const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+   const url=c.toDataURL('image/jpeg',.9);stopCam();shrink(url,done)};
+  $('#camX').onclick=stopCam;
+ }).catch(()=>{toast('Camera blocked or not found — pick a photo instead.');fallback()});
+}
+function modal(o){
+ stopCam();
+ $('#overlay').innerHTML=`<div class="mdl${o.wide?' wide':''}" role="dialog" aria-modal="true"><div class="mh"><h2>${o.title}</h2><button class="x" data-act="closeModal" aria-label="Close">×</button></div><div class="mb">${o.body}</div>${o.footer?`<div class="mf">${o.footer}</div>`:''}</div>`;
+ $('#overlay').classList.add('open');if(o.onOpen)o.onOpen();
+}
+const closeModal=()=>{stopCam();const r=$('#overlay');r.classList.remove('open');r.innerHTML=''};
+function confirmBox(title,text,okLabel,cb,danger){
+ modal({title,body:`<p>${text}</p>`,footer:`<button class="btn" data-act="closeModal">Cancel</button><button class="btn ${danger?'bad':'pri'}" id="cfOk">${okLabel}</button>`,onOpen(){$('#cfOk').onclick=()=>{closeModal();cb()}}});
+}
+const optHtml=(opts,val,ph)=>(ph!=null?`<option value="">${esc(ph)}</option>`:'')+opts.map(o=>{const v=typeof o==='object'?o.v:o,l=typeof o==='object'?o.l:o;return `<option value="${esc(v)}"${String(v)===String(val)?' selected':''}>${esc(l)}</option>`}).join('');
+function fieldHtml(f,vals){
+ const v=vals[f.n]!=null?vals[f.n]:(f.def!=null?f.def:'');
+ let inp;
+ if(f.t==='select')inp=`<select class="in" id="f-${f.n}"${f.dis?' disabled':''}>${optHtml(f.opts,v,f.ph)}</select>`;
+ else if(f.t==='textarea')inp=`<textarea class="in" id="f-${f.n}" rows="2" placeholder="${esc(f.ph||'')}">${esc(v)}</textarea>`;
+ else if(f.t==='file')return `<div class="fld full"><span style="font-weight:600;font-size:12.5px">${esc(f.l)}</span>
+  <div class="who"><span id="phPrev"></span><div class="acts"><button type="button" class="btn sm pri" id="phCam">📷 Take photo</button><button type="button" class="btn sm" id="phUp">Upload</button><button type="button" class="btn sm" id="phRm" hidden>Remove</button></div></div>
+  <input type="file" id="f-${f.n}" accept="image/*" hidden><input type="file" id="f-${f.n}Cam" accept="image/*" capture="user" hidden>
+  <div id="camBox" hidden style="margin-top:8px"><video id="camV" autoplay playsinline muted style="width:100%;max-width:340px;border-radius:10px;background:#000;display:block"></video>
+  <div class="acts" style="margin-top:8px"><button type="button" class="btn sm ok" id="camSnap">Capture</button><button type="button" class="btn sm" id="camX">Cancel</button></div></div>
+  <small>Take a live photo with the camera (allow camera access when asked) or upload one.</small></div>`;
+ else inp=`<input class="in" id="f-${f.n}" type="${f.t||'text'}" value="${esc(v)}" placeholder="${esc(f.ph||'')}"${f.list?` list="${f.list}"`:''}${f.ro?' readonly':''}>`;
+ return `<label class="fld${f.full?' full':''}"><span>${esc(f.l)}${f.req?' <i class="rq">*</i>':''}</span>${inp}${f.hint?`<small>${f.hint}</small>`:''}</label>`;
+}
+function collect(fields){
+ const vals={};
+ for(const f of fields){
+  if(f.t==='file')continue;
+  const el=$('#f-'+f.n);const v=el?el.value.trim():'';vals[f.n]=v;
+  if(f.req&&!v)return {error:`${f.l} is required.`,el};
+  if(v&&f.t==='tel'&&!/^[6-9]\d{9}$/.test(v))return {error:`${f.l} must be a valid 10-digit mobile number.`,el};
+ }
+ return {values:vals};
+}
+/** Generic form modal. buttons: [{label,cls,run(values)->errorString|null}] */
+function formModal(o){
+ const vals=o.values||{};
+ modal({title:o.title,wide:o.wide,body:(o.pre||'')+`<form id="mf" class="f2" novalidate>${o.fields.map(f=>fieldHtml(f,vals)).join('')}<div class="err" id="mfErr" hidden></div></form>`,
+  footer:`<button class="btn" data-act="closeModal">Cancel</button>`+o.buttons.map((b,i)=>`<button class="btn ${b.cls||'pri'}" data-btn="${i}">${b.label}</button>`).join(''),
+  onOpen(){
+   $('#mf').addEventListener('submit',e=>e.preventDefault());
+   $$('[data-btn]').forEach(bt=>bt.onclick=()=>{
+    const c=collect(o.fields);const show=m=>{const e=$('#mfErr');e.textContent=m;e.hidden=false;e.scrollIntoView({block:'nearest'})};
+    if(c.error){show(c.error);if(c.el)c.el.focus();return}
+    const err=o.buttons[+bt.dataset.btn].run(c.values);
+    if(err)show(err);
+   });
+   if(o.onOpen)o.onOpen();
+  }});
+}
+const pageHead=(t,sub,acts)=>`<div class="ph"><div><h1>${t}</h1>${sub?`<p class="muted" style="margin:4px 0 0">${sub}</p>`:''}</div><div class="acts">${acts||''}</div></div>`;
+const btn=(label,act,id,cls,extra)=>`<button class="btn sm ${cls||''}" data-act="${act}" data-id="${esc(id)}"${extra||''}>${label}</button>`;
+const pbtn=(label,act,id)=>`<button class="btn pri" data-act="${act}" data-id="${esc(id||'')}">${label}</button>`;
+function tbl(cols,rows,empty){
+ if(!rows.length)return `<div class="empty">${empty||'No records found.'}</div>`;
+ return `<div class="tw"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+const fi=(key,ph)=>`<input class="in" data-f="${key}" value="${esc(UI.f[key]||'')}" placeholder="${esc(ph)}">`;
+const fs=(key,opts,all,full)=>`<select class="in" data-f="${key}"${full?' data-full="1"':''}>${optHtml(opts,UI.f[key]||'',all)}</select>`;
+const tabsHtml=(page,list)=>`<div class="tabs">${list.map(t=>`<button class="tab${(UI.tab[page]||list[0][0])===t[0]?' on':''}" data-act="tab" data-id="${page}" data-x="${t[0]}">${t[1]}${t[2]!=null?`<span class="cnt">${t[2]}</span>`:''}</button>`).join('')}</div>`;
+const curTab=(page,def)=>UI.tab[page]||def;
+const hue=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
+const avatar=m=>m.photo?`<img class="av" src="${esc(m.photo)}" alt="">`:`<span class="av" style="background:hsl(${hue(m.name)} 45% 40%)">${esc(m.name.split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`;
+const branchOpts=()=>DB.branches.filter(b=>CUR.role!=='coordinator'||b.id===CUR.branchId).map(b=>({v:b.id,l:b.name}));
+const deptOpts=()=>DB.depts.filter(x=>x.active).map(x=>({v:x.id,l:x.name}));
+const bar=(l,v,max)=>`<div class="row"><span>${esc(l)}</span><div class="bar"><i style="width:${max?Math.round(v/max*100):0}%"></i></div><b>${v}</b></div>`;
+const memberStatus=m=>{for(const s of ['Checked In','Approved','Submitted']){if(DB.regs.some(r=>r.memberId===m.id&&r.status===s))return s==='Checked In'?'Resident':s}return ''};
+const dl=(name,list)=>`<datalist id="${name}">${list.map(m=>`<option value="${esc(m.id+' · '+m.name+' · '+m.mobile)}"></option>`).join('')}</datalist>`;
+
+/* ---------- 7. Pages ---------- */
+const PAGES={};
+
+/* ===== Dashboard ===== */
+PAGES.dashboard={render(){
+ const t=today(),R=regs(),M=members();
+ const res=R.filter(r=>r.status==='Checked In');
+ const arr=R.filter(r=>['Approved','Checked In','Checked Out'].includes(r.status)&&(r.actualIn?dayOf(r.actualIn):stayStart(r))===t);
+ const arrived=arr.filter(r=>r.actualIn);
+ const depExp=R.filter(r=>r.status==='Checked In'&&stayEnd(r)===t),depDone=R.filter(r=>r.status==='Checked Out'&&dayOf(r.actualOut)===t);
+ const subs=R.filter(r=>r.status==='Submitted'),exts=R.filter(r=>pendingExt(r));
+ const ty=x=>res.filter(r=>stayType(r)===x).length;
+ const go=(p,v,l,s)=>`<button class="stat click" data-act="go" data-id="${p}"><div class="v">${v}</div><div class="l">${l}</div>${s?`<div class="s">${s}</div>`:''}</button>`;
+ let h=pageHead('Dashboard',`${esc(ROLES[CUR.role].label)} · ${fd(t)}${CUR.role==='coordinator'?' · '+esc((branch(CUR.branchId)||{}).name||'no branch set')+' branch':''}${CUR.role==='supervisor'?' · '+esc((dept(CUR.deptId)||{}).name||'no department set')+' department':''}`);
+ h+=`<div class="grid g4" style="margin-bottom:16px">
+  ${go('members',M.length,'Total registered sewadar')}
+  ${go('reception',res.length,'Currently residing',`${res.filter(r=>stayEnd(r)<t).length} overdue`)}
+  ${go('reception',`${arrived.length}<small> / ${arr.length}</small>`,"Today's arrivals",'arrived / expected')}
+  ${go('reception',`${depDone.length}<small> / ${depExp.length+depDone.length}</small>`,"Today's departures",'departed / due')}
+  ${go('approvals',subs.length+exts.length,'Pending approvals',`${subs.length} registrations · ${exts.length} extensions`)}
+  <div class="stat"><div class="v">${ty('Short-Term')}<small> / ${ty('Monthly')} / ${ty('Long-Term')}</small></div><div class="l">Residents: Short-Term / Monthly / Long-Term</div></div></div>`;
+ h+=`<div class="grid g2">`;
+ if(can('accommodation')){
+  const st=bedStates(),c={Available:0,Occupied:0,Reserved:0,Cleaning:0};st.forEach(s=>c[s.status]++);const tot=DB.beds.length;
+  h+=`<div class="card"><h3>Bed availability</h3><div class="stack">${Object.keys(c).map(k=>`<i class="c-${k}" style="width:${tot?c[k]/tot*100:0}%" title="${k}"></i>`).join('')}</div>
+   <div class="legend">${Object.keys(c).map(k=>`<span><i class="dot c-${k}"></i>${k} <b>${c[k]}</b></span>`).join('')}<span class="muted">of ${tot} beds</span></div>
+   <button class="btn sm" data-act="go" data-id="accommodation">Open bed board →</button></div>`;
+ }
+ const dc=DB.depts.map(x=>[x.name,DB.duties.filter(u=>u.deptId===x.id&&u.status==='Active'&&scopeReg(reg(u.regId))).length]);const mx=Math.max(1,...dc.map(x=>x[1]));
+ h+=`<div class="card bars"><h3>Department-wise sewadar</h3>${dc.map(x=>bar(x[0],x[1],mx)).join('')}<div class="muted" style="font-size:12px">${res.filter(r=>!activeDuty(r.id)).length} resident(s) without a department</div></div>`;
+ /* attention list */
+ const al=[];
+ const od=res.filter(r=>stayEnd(r)<t);if(od.length)al.push(['bad',`${od.length} overdue stay(s): ${od.slice(0,3).map(r=>esc(mName(r.memberId))).join(', ')}${od.length>3?'…':''}`,'longterm']);
+ const ex=R.filter(r=>r.status==='Checked In'&&['Monthly','Long-Term'].includes(stayType(r))&&diffDays(t,stayEnd(r))>=0&&diffDays(t,stayEnd(r))<=7);
+ if(ex.length)al.push(['',`${ex.length} monthly/long-term stay(s) expiring within 7 days`,'longterm']);
+ if(can('accommodation')){const nb=R.filter(r=>['Approved','Checked In'].includes(r.status)&&!activeAlloc(r.id)).length;if(nb)al.push(['info',`${nb} approved member(s) waiting for a bed`,'accommodation']);
+  const cl=DB.beds.filter(b=>b.cleaning).length;if(cl)al.push(['info',`${cl} bed(s) pending cleaning`,'accommodation'])}
+ if(can('departments')){const nd=res.filter(r=>!activeDuty(r.id)).length;if(nd)al.push(['info',`${nd} resident(s) without sewa assignment`,'departments'])}
+ h+=`<div class="card"><h3>Needs attention</h3>${al.length?al.map(a=>`<div class="alert ${a[0]}"><span>${a[1]}</span><button class="btn sm" data-act="go" data-id="${a[2]}">Open</button></div>`).join(''):'<div class="empty">Nothing needs attention.</div>'}</div>`;
+ if(CUR.role!=='coordinator'&&CUR.role!=='supervisor')h+=`<div class="card"><h3>Recent activity</h3>${DB.log.slice(0,8).map(l=>`<div style="padding:5px 0;border-bottom:1px solid #f0ece5"><small>${fdt(l.at)} · ${esc(l.by)}</small><br>${esc(l.text)}</div>`).join('')}</div>`;
+ return h+'</div>';
+}};
+
+/* ===== Member Master ===== */
+PAGES.members={render(){
+ return pageHead('Member Master','One permanent Member ID per person. Visits, sewa and stays all link to this ID.',canEdit('members')?pbtn('+ Add member','memberAdd'):'')+
+ `<div class="card"><div class="filters">${fi('mem.q','Search ID, name, mobile…')}${CUR.role==='coordinator'?'':fs('mem.br',branchOpts(),'All branches')}${fs('mem.st',STATES,'All states')}${fs('mem.ty',TYPES,'All types')}${fs('mem.rs',['Resident','Not resident'],'Any residence')}</div><div id="tbl">${this.table()}</div></div>`;
+},table(){
+ const q=(UI.f['mem.q']||'').toLowerCase(),br=UI.f['mem.br'],st=UI.f['mem.st'],ty=UI.f['mem.ty'],rs=UI.f['mem.rs'];
+ const list=members().filter(m=>(!q||(m.id+m.name+m.mobile).toLowerCase().includes(q))&&(!br||m.branchId===br)&&(!st||m.state===st)&&(!ty||m.type===ty)&&(!rs||(rs==='Resident')===(memberStatus(m)==='Resident')));
+ const cols=[['Member',m=>`<div class="who">${avatar(m)}<div><b>${esc(m.name)}</b><br><small>${esc(m.id)}</small></div></div>`],['Mobile',m=>esc(m.mobile)],['Age / Gender',m=>`${ageOf(m.dob)} · ${esc(m.gender)}`],
+  ['Branch',m=>`${esc((branch(m.branchId)||{}).name)}<br><small>${esc(m.state)}</small>`],['Type',m=>badge(m.type)],['Status',m=>memberStatus(m)?badge(memberStatus(m)):'—'],
+  ['',m=>btn('View','memberView',m.id)+(canEditMember(m)?btn('Edit','memberEdit',m.id)+btn('Delete','memberDelete',m.id,'dng'):'')]];
+ return `<div class="muted" style="margin-bottom:6px">${list.length} member(s)${list.length>100?' — showing first 100':''}</div>`+tbl(cols,list.slice(0,100));
+}};
+
+function memberForm(id,cb){
+ const ex=id?member(id):null,isC=CUR.role==='coordinator';let photo=ex?ex.photo:null;
+ const fields=[{n:'name',l:'Full name',req:1},{n:'mobile',l:'Mobile number',t:'tel',req:1,ph:'10-digit mobile'},{n:'dob',l:'Date of birth',t:'date',req:1},
+  {n:'gender',l:'Gender',t:'select',opts:['Male','Female','Other'],req:1,ph:'Select'},{n:'branchId',l:'Branch',t:'select',opts:branchOpts(),req:1,ph:'Select branch'},
+  {n:'type',l:'Member type',t:'select',opts:TYPES,req:1},{n:'state',l:'State',t:'select',opts:STATES,req:1,ph:'Select'},{n:'district',l:'District',req:1},
+  {n:'address',l:'Address',t:'textarea',req:1,full:1},{n:'emName',l:'Emergency contact name',req:1},{n:'emPhone',l:'Emergency contact mobile',t:'tel',req:1},
+  {n:'emRel',l:'Relation',t:'select',opts:RELS,ph:'Select'},{n:'photo',l:'Photo (optional)',t:'file',full:1}];
+ const vals=ex?Object.assign({},ex):{type:'Short-Term',branchId:isC?CUR.branchId:'',state:isC?((branch(CUR.branchId)||{}).state||'Punjab'):'Punjab',district:isC?((branch(CUR.branchId)||{}).district||''):''};
+ formModal({title:ex?`Edit member — ${esc(ex.id)}`:'Add member',fields,values:vals,wide:true,
+  buttons:[{label:ex?'Save changes':'Create member',run(v){
+   if(v.dob>today())return 'Date of birth cannot be in the future.';
+   const dup=DB.members.find(m=>m.id!==id&&m.mobile===v.mobile);
+   if(dup)return `A member with this mobile number already exists (${dup.id}). One permanent Member ID per person — use the existing record.`;
+   const dup2=DB.members.find(m=>m.id!==id&&m.name.toLowerCase()===v.name.toLowerCase()&&m.dob===v.dob);
+   if(dup2)return `A member with the same name and date of birth already exists (${dup2.id}).`;
+   let m=ex;
+   if(!m){m={id:nid('mem','NM-',4),createdOn:today()};DB.members.push(m)}
+   Object.assign(m,{name:v.name,mobile:v.mobile,dob:v.dob,gender:v.gender,branchId:v.branchId,type:v.type,state:v.state,district:v.district,address:v.address,emName:v.emName,emPhone:v.emPhone,emRel:v.emRel,photo});
+   log(`${ex?'Updated':'Created'} member ${m.id} (${m.name})`);Store.save();closeModal();render();toast(ex?'Member updated':`Member created: ${m.id}`,'ok');if(cb)cb(m);return null}}],
+  onOpen(){
+   const prev=()=>{$('#phPrev').innerHTML=photo?`<img class="av" style="width:72px;height:72px;border-radius:10px" src="${esc(photo)}" alt="Member photo">`:'<span class="av" style="width:72px;height:72px;border-radius:10px;background:#d6d3cd">No photo</span>';$('#phRm').hidden=!photo;$('#phCam').textContent=photo?'📷 Retake photo':'📷 Take photo'};prev();
+   const fromFile=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>shrink(rd.result,u=>{photo=u;prev()});rd.readAsDataURL(f);e.target.value=''};
+   $('#f-photo').onchange=fromFile;$('#f-photoCam').onchange=fromFile;
+   $('#phUp').onclick=()=>$('#f-photo').click();
+   $('#phRm').onclick=()=>{photo=null;prev()};
+   $('#phCam').onclick=()=>startCam(()=>$('#f-photoCam').click(),u=>{photo=u;prev()});
+   $('#f-branchId').onchange=e=>{const b=branch(e.target.value);if(b){$('#f-state').value=b.state;$('#f-district').value=b.district}};
+  }});
+}
+function memberView(id){
+ const m=member(id);if(!m)return;
+ const rs=DB.regs.filter(r=>r.memberId===id&&scopeReg(r)).sort((a,b)=>stayStart(b).localeCompare(stayStart(a)));
+ const als=DB.allocs.filter(a=>a.memberId===id).sort((a,b)=>b.from.localeCompare(a.from)),dus=DB.duties.filter(x=>x.memberId===id).sort((a,b)=>b.from.localeCompare(a.from));
+ modal({title:`${esc(m.name)} <small>${esc(m.id)}</small>`,wide:true,body:`
+  <div class="who" style="margin-bottom:12px">${avatar(m)}<div class="chips">${badge(m.type)}${memberStatus(m)?badge(memberStatus(m)):''}${m.sample?'<span class="chip">Sample record</span>':''}</div></div>
+  <div class="kv"><div><span>Mobile</span>${esc(m.mobile)}</div><div><span>Age / DOB</span>${ageOf(m.dob)} yrs · ${fd(m.dob)}</div><div><span>Gender</span>${esc(m.gender)}</div>
+  <div><span>Branch</span>${esc((branch(m.branchId)||{}).name)}</div><div><span>State / District</span>${esc(m.state)} / ${esc(m.district)}</div>
+  <div><span>Emergency contact</span>${esc(m.emName)} ${m.emRel?'('+esc(m.emRel)+')':''} · ${esc(m.emPhone)}</div><div style="grid-column:1/-1"><span>Address</span>${esc(m.address)}</div></div>
+  <h3>Visit history</h3>${tbl([['Request',r=>esc(r.id)],['Stay',r=>`${fd(stayStart(r))} – ${fd(stayEnd(r))}`],['Type',r=>badge(stayType(r))],['Actual',r=>`${fdt(r.actualIn)}<br><small>${r.actualOut?fdt(r.actualOut):''}</small>`],['Status',r=>badge(r.status)],['',r=>btn('Details','regView',r.id)]],rs,'No visits recorded.')}
+  <h3 style="margin-top:14px">Accommodation history</h3>${tbl([['Bed',a=>esc(allocBedText(a))],['From',a=>fd(a.from)],['To',a=>fd(a.to)],['Note',a=>esc(a.active?a.reason:(a.endReason||'Closed'))]],als,'No bed allocations.')}
+  <h3 style="margin-top:14px">Sewa history</h3>${tbl([['Department',x=>esc(dept(x.deptId).name)],['Shift',x=>esc(x.shift)],['From',x=>fd(x.from)],['To',x=>fd(x.to)],['Status',x=>badge(x.status)],['Attendance',x=>attPct(x.regId)==null?'—':attPct(x.regId)+'% present']],dus,'No sewa assignments.')}`,
+  footer:(canEditMember(m)?`<button class="btn dng" data-act="memberDelete" data-id="${id}">Delete member</button><button class="btn" data-act="memberEdit" data-id="${id}">Edit member</button>`:'')+(canEdit('prereg')?`<button class="btn pri" data-act="regNew" data-id="${id}">New pre-registration</button>`:'')+`<button class="btn" data-act="closeModal">Close</button>`});
+}
+
+/* ===== Branches ===== */
+PAGES.branches={render(){
+ const P=DB.branches.filter(b=>b.state==='Punjab').length;
+ return pageHead('Branch Management',`${DB.branches.length} branches — ${P} in Punjab, ${DB.branches.length-P} in other states. <span class="chip">Sample list — edit to match actual branches</span>`,canEdit('branches')?pbtn('+ Add branch','branchAdd'):'')+
+ `<div class="card"><div class="filters">${fi('br.q','Search branch, district, coordinator…')}${fs('br.st',STATES,'All states')}</div><div id="tbl">${this.table()}</div></div>`;
+},table(){
+ const q=(UI.f['br.q']||'').toLowerCase(),st=UI.f['br.st'];
+ const list=DB.branches.filter(b=>(CUR.role!=='coordinator'||b.id===CUR.branchId)&&(!st||b.state===st)&&(!q||(b.name+b.district+b.coordinator).toLowerCase().includes(q)));
+ return tbl([['Branch',b=>`<b>${esc(b.name)}</b>`],['State',b=>esc(b.state)],['District',b=>esc(b.district)],['Coordinator',b=>`${esc(b.coordinator)}<br><small>${esc(b.phone)}</small>`],
+  ['Members',b=>DB.members.filter(m=>m.branchId===b.id).length],['Open requests',b=>DB.regs.filter(r=>r.branchId===b.id&&['Submitted','Approved'].includes(r.status)).length],['Residing now',b=>DB.regs.filter(r=>r.branchId===b.id&&r.status==='Checked In').length],
+  ['',b=>btn('View','branchView',b.id)+(canEdit('branches')?btn('Edit','branchEdit',b.id)+btn('Delete','branchDelete',b.id,'dng'):'')]],list);
+}};
+function branchForm(id){
+ const ex=id?branch(id):null;
+ formModal({title:ex?'Edit branch':'Add branch',values:ex||{state:'Punjab'},fields:[{n:'name',l:'Branch name',req:1},{n:'state',l:'State',t:'select',opts:STATES,req:1,ph:'Select'},{n:'district',l:'District',req:1},{n:'coordinator',l:'Coordinator name',req:1},{n:'phone',l:'Coordinator mobile',t:'tel',req:1}],
+  buttons:[{label:'Save',run(v){
+   if(DB.branches.some(b=>b.id!==id&&b.name.toLowerCase()===v.name.toLowerCase()&&b.state===v.state))return 'A branch with this name already exists in that state.';
+   if(ex)Object.assign(ex,v);else DB.branches.push(Object.assign({id:nid('br','BR',3)},v));
+   log(`${ex?'Updated':'Added'} branch ${v.name}`);Store.save();closeModal();render();toast('Branch saved','ok');return null}}]});
+}
+function branchView(id){
+ const b=branch(id),ms=DB.members.filter(m=>m.branchId===id),rs=DB.regs.filter(r=>r.branchId===id).sort((a,c)=>stayStart(c).localeCompare(stayStart(a)));
+ modal({title:`${esc(b.name)} branch`,wide:true,body:`<div class="kv"><div><span>State / District</span>${esc(b.state)} / ${esc(b.district)}</div><div><span>Coordinator</span>${esc(b.coordinator)} · ${esc(b.phone)}</div></div>
+  <h3>Registered members (${ms.length})</h3>${tbl([['ID',m=>esc(m.id)],['Name',m=>esc(m.name)],['Mobile',m=>esc(m.mobile)],['Type',m=>badge(m.type)],['Status',m=>memberStatus(m)?badge(memberStatus(m)):'—']],ms)}
+  <h3 style="margin-top:14px">Pre-registration &amp; arrivals (${rs.length})</h3>${tbl([['Request',r=>esc(r.id)],['Member',r=>esc(mName(r.memberId))],['Stay',r=>`${fd(stayStart(r))} – ${fd(stayEnd(r))}`],['Arrived',r=>fdt(r.actualIn)],['Status',r=>badge(r.status)]],rs)}`,footer:'<button class="btn" data-act="closeModal">Close</button>'});
+}
+
+/* ===== Pre-Registration ===== */
+PAGES.prereg={render(){
+ return pageHead('Sewadar Pre-Registration','Branch coordinators register sewadar before arrival and submit to Noormahal management for approval.',canEdit('prereg')?pbtn('+ New pre-registration','regNew',''):'')+
+ `<div class="card"><div class="filters">${fi('pr.q','Search request, member…')}${fs('pr.st',['Draft','Submitted','Approved','Rejected','Cancelled','Checked In','Checked Out'],'All statuses')}${CUR.role==='coordinator'?'':fs('pr.br',branchOpts(),'All branches')}</div><div id="tbl">${this.table()}</div></div>`;
+},table(){
+ const q=(UI.f['pr.q']||'').toLowerCase(),st=UI.f['pr.st'],br=UI.f['pr.br'];
+ const list=regs().filter(r=>(!st||r.status===st)&&(!br||r.branchId===br)&&(!q||(r.id+mName(r.memberId)+r.memberId).toLowerCase().includes(q))).sort((a,b)=>b.id.localeCompare(a.id));
+ const ed=canEdit('prereg');
+ return tbl([['Request',r=>`<b>${esc(r.id)}</b>${r.source==='Walk-in'?'<br><small>Walk-in</small>':''}`],['Member',r=>`${esc(mName(r.memberId))}<br><small>${esc(r.memberId)}</small>`],['Branch',r=>esc(branch(r.branchId).name)],
+  ['Requested stay',r=>`${fd(r.arrival)} – ${fd(r.departure)}`],['Type',r=>badge(r.type)],['Pref. dept',r=>esc((dept(r.prefDept)||{}).name||'—')],['Status',r=>badge(r.status)+(r.status==='Rejected'&&r.remarks?`<br><small>${esc(r.remarks)}</small>`:'')],
+  ['',r=>{let a=btn('View','regView',r.id);if(!ed)return a;
+   if(r.status==='Draft')a+=btn('Edit','regEdit',r.id)+btn('Submit','regSubmit',r.id,'ok')+btn('Delete','regDelete',r.id,'dng');
+   if(r.status==='Submitted')a+=btn('Withdraw','regWithdraw',r.id)+btn('Cancel','regCancel',r.id,'dng');
+   if(r.status==='Approved')a+=(pendingExt(r)?'':btn('Request extension','extReq',r.id))+btn('Cancel','regCancel',r.id,'dng');
+   if(r.status==='Checked In'&&!pendingExt(r))a+=btn('Request extension','extReq',r.id);
+   if(['Rejected','Cancelled'].includes(r.status))a+=btn('Re-open','regReopen',r.id)+btn('Delete','regDelete',r.id,'dng');
+   if(r.status==='Checked Out'&&['superadmin','manager'].includes(CUR.role))a+=btn('Delete','regDelete',r.id,'dng');
+   return a}]],list);
+}};
+
+/** Pre-registration / walk-in form. `walk` → reception walk-in. */
+function regForm(id,presetMember,walk,presetType){
+ const ex=id?reg(id):null,isC=CUR.role==='coordinator';
+ const pool=members().filter(m=>!isC||m.branchId===CUR.branchId);
+ const pm=presetMember?member(presetMember):(ex?member(ex.memberId):null);
+ const vals=ex?Object.assign({},ex,{member:pm.id+' · '+pm.name+' · '+pm.mobile}):{member:pm?pm.id+' · '+pm.name+' · '+pm.mobile:'',type:presetType||(pm?pm.type:'Short-Term'),branchId:pm?pm.branchId:(isC?CUR.branchId:''),arrival:walk?today():'',prefDept:''};
+ const fields=[{n:'member',l:'Member (type ID, name or mobile)',req:1,list:'dlM',ro:!!ex,hint:ex?'':'<a href="#" data-act="newMemberFromReg">+ Create new member</a> if not found'},
+  {n:'branchId',l:'Registering branch',t:'select',opts:branchOpts(),req:1,ph:'Select branch',dis:isC},
+  {n:'arrival',l:'Arrival date',t:'date',req:1},{n:'departure',l:'Expected departure date',t:'date',req:1},
+  {n:'type',l:'Stay type',t:'select',opts:TYPES,req:1},{n:'prefDept',l:'Preferred sewa department',t:'select',opts:deptOpts(),ph:'No preference'},
+  {n:'purpose',l:'Purpose of visit',t:'textarea',req:1,full:1}];
+ const save=(v,submit)=>{
+  const mid=(v.member.match(/NM-\d+/)||[])[0],m=mid&&member(mid);
+  if(!m)return 'Select an existing member from the list, or create a new member first.';
+  if(isC&&m.branchId!==CUR.branchId)return 'You can only register members of your own branch.';
+  if(v.departure<v.arrival)return 'Departure date cannot be before arrival.';
+  if(submit||walk){const c=memberClash(m.id,v.arrival,v.departure,id);if(c)return `${m.name} already has request ${c.id} (${c.status}) overlapping these dates.`}
+  const auto=walk&&['manager','superadmin'].includes(CUR.role);
+  let r=ex;
+  if(!r){r={id:nid('reg','PR-',4),memberId:m.id,history:[],exts:[],remarks:'',createdOn:today(),createdBy:ROLES[CUR.role].label};DB.regs.push(r)}
+  Object.assign(r,{branchId:isC?CUR.branchId:v.branchId,arrival:v.arrival,departure:v.departure,type:v.type,prefDept:v.prefDept,purpose:v.purpose,source:walk?'Walk-in':'Pre-registration'});
+  if(auto){Object.assign(r,{status:'Approved',approvedFrom:v.arrival,approvedTo:v.departure,approvedType:v.type,approvedDept:v.prefDept,approvedBy:CUR.name});hist(r,'Walk-in registered and approved by management')}
+  else{r.status=submit||walk?'Submitted':'Draft';hist(r,walk?'Walk-in registered at reception — sent for approval':submit?'Submitted for approval':(ex?'Draft updated':'Draft created'))}
+  log(`${r.id} ${r.status} (${m.name})`);Store.save();closeModal();render();
+  toast(auto?`Walk-in approved — ready for check-in (${r.id})`:walk?`Walk-in sent to Sewadar Manager for approval (${r.id})`:submit?`Submitted for approval (${r.id})`:`Draft saved (${r.id})`,'ok');return null};
+ formModal({title:walk?'Register walk-in visitor':ex?`Edit ${esc(ex.id)}`:'New pre-registration',wide:true,pre:dl('dlM',pool),values:vals,fields,
+  buttons:(walk?[]:[{label:'Save draft',cls:'',run:v=>save(v,false)}]).concat([{label:walk?(['manager','superadmin'].includes(CUR.role)?'Register & approve':'Send for approval'):'Submit for approval',run:v=>save(v,true)}]),
+  onOpen(){
+   const bf=$('#f-branchId');if(isC)bf.value=CUR.branchId;
+   $('#f-member').addEventListener('change',e=>{const mid=(e.target.value.match(/NM-\d+/)||[])[0],m=mid&&member(mid);if(m){$('#f-type').value=m.type;if(!isC)bf.value=m.branchId}});
+  }});
+ /* the collect() helper skips disabled-select branch for coordinators; value is still read */
+}
+function viewReg(id){
+ const r=reg(id),m=member(r.memberId),al=activeAlloc(id),du=activeDuty(id),pe=pendingExt(r);
+ modal({title:`${esc(r.id)} — ${esc(m.name)}`,wide:true,body:`<div class="chips" style="margin-bottom:12px">${badge(r.status)}${badge(stayType(r))}${r.source==='Walk-in'?'<span class="chip">Walk-in</span>':''}${pe?`<span class="chip">Extension pending → ${fd(pe.to)}</span>`:''}</div>
+  <div class="kv"><div><span>Member</span>${esc(m.id)} · ${esc(m.mobile)}</div><div><span>Branch</span>${esc(branch(r.branchId).name)}</div><div><span>Requested stay</span>${fd(r.arrival)} – ${fd(r.departure)}</div>
+  <div><span>Approved stay</span>${r.approvedFrom?fd(r.approvedFrom)+' – '+fd(r.approvedTo):'—'}</div><div><span>Preferred dept</span>${esc((dept(r.prefDept)||{}).name||'—')}</div><div><span>Approved dept</span>${esc((dept(r.approvedDept)||{}).name||'—')}</div>
+  <div><span>Actual arrival</span>${fdt(r.actualIn)}</div><div><span>Actual departure</span>${fdt(r.actualOut)}</div><div><span>Current bed</span>${al?esc(bedPath(bedO(al.bedId))):'—'}</div>
+  <div><span>Current sewa</span>${du?esc(dept(du.deptId).name)+' · '+du.shift:'—'}</div><div style="grid-column:1/-1"><span>Purpose</span>${esc(r.purpose)}</div>${r.remarks?`<div style="grid-column:1/-1"><span>Management remarks</span>${esc(r.remarks)}</div>`:''}</div>
+  <h3>Timeline</h3><div class="tl">${r.history.map(h=>`<div><small>${fdt(h.at)} · ${esc(h.by)}</small><br>${esc(h.text)}</div>`).join('')||'—'}</div>`,footer:'<button class="btn" data-act="closeModal">Close</button>'});
+}
+function extForm(id){
+ const r=reg(id);
+ formModal({title:`Request extension — ${esc(mName(r.memberId))}`,values:{},fields:[{n:'to',l:`New end date (current: ${fd(stayEnd(r))})`,t:'date',req:1},{n:'reason',l:'Reason',t:'textarea',req:1,full:1}],
+  buttons:[{label:'Send request',run(v){if(v.to<=stayEnd(r))return 'New end date must be after the current end date.';
+   r.exts.push({to:v.to,reason:v.reason,status:'Pending',by:ROLES[CUR.role].label,on:nowLocal()});hist(r,`Extension requested to ${fd(v.to)} — ${v.reason}`);log(`Extension requested: ${mName(r.memberId)}`);Store.save();closeModal();render();toast('Extension request sent to management','ok');return null}}]});
+}
+
+/* ===== Approvals ===== */
+PAGES.approvals={render(){
+ const R=regs(),subs=R.filter(r=>r.status==='Submitted'),ex=R.filter(r=>pendingExt(r)),done=R.filter(r=>['Approved','Rejected'].includes(r.status)&&r.approvedBy!==undefined||r.status==='Rejected');
+ const tab=curTab('approvals','p');let b='';
+ const ed=canEdit('approvals');
+ if(tab==='p')b=tbl([['Request',r=>`<b>${esc(r.id)}</b>${r.source==='Walk-in'?'<br><small>Walk-in</small>':''}`],['Member',r=>`${esc(mName(r.memberId))}<br><small>${esc(r.memberId)} · ${esc(branch(r.branchId).name)}</small>`],['Requested',r=>`${fd(r.arrival)} – ${fd(r.departure)}<br><small>${diffDays(r.arrival,r.departure)+1} day(s)</small>`],['Type',r=>badge(r.type)],['Pref. dept',r=>esc((dept(r.prefDept)||{}).name||'—')],['Purpose',r=>esc(r.purpose)],['',r=>ed?btn('Review','approveOpen',r.id,'pri'):btn('View','regView',r.id)]],subs,'No requests waiting for approval.');
+ if(tab==='x')b=tbl([['Member',r=>esc(mName(r.memberId))],['Current end',r=>fd(stayEnd(r))],['Requested end',r=>fd(pendingExt(r).to)],['Reason',r=>esc(pendingExt(r).reason)],['Requested by',r=>esc(pendingExt(r).by)],['',r=>ed?btn('Approve','extDecide',r.id,'ok',' data-x="y"')+btn('Reject','extDecide',r.id,'bad',' data-x="n"'):'']],ex,'No extension requests.');
+ if(tab==='d')b=tbl([['Request',r=>esc(r.id)],['Member',r=>esc(mName(r.memberId))],['Decision',r=>badge(r.status==='Rejected'?'Rejected':'Approved')],['Approved stay',r=>r.approvedFrom?`${fd(r.approvedFrom)} – ${fd(r.approvedTo)}`:'—'],['Remarks',r=>esc(r.remarks||'')],['',r=>btn('View','regView',r.id)+(ed&&r.status==='Approved'?btn('Revert to pending','apRevert',r.id):'')+(ed&&r.status==='Rejected'?btn('Reconsider','apReconsider',r.id):'')]],R.filter(r=>['Approved','Checked In','Checked Out','Rejected'].includes(r.status)).sort((a,c)=>c.id.localeCompare(a.id)).slice(0,60));
+ return pageHead('Approval Management','Review requests, confirm dates and type, assign sewa department, then forward to reception.')+`<div class="card">${tabsHtml('approvals',[['p','Pending requests',subs.length],['x','Extension requests',ex.length],['d','Decided']])}${b}</div>`;
+}};
+function approveForm(id){
+ const r=reg(id),m=member(r.memberId);
+ const act=(ok)=>v=>{
+  if(!ok&&!v.remarks)return 'Remarks are required when rejecting a request.';
+  if(ok){if(v.to<v.from)return 'Stay end cannot be before start.';const c=memberClash(m.id,v.from,v.to,id);if(c)return `${m.name} has another live request (${c.id}) overlapping these dates.`;
+   Object.assign(r,{status:'Approved',approvedFrom:v.from,approvedTo:v.to,approvedType:v.type,approvedDept:v.dept,approvedBy:CUR.name,remarks:v.remarks});
+   hist(r,`Approved (${fd(v.from)} – ${fd(v.to)}, ${v.type}, ${(dept(v.dept)||{}).name||'no dept'}) — forwarded to reception${v.remarks?'. '+v.remarks:''}`)}
+  else{r.status='Rejected';r.remarks=v.remarks;hist(r,'Rejected — '+v.remarks)}
+  log(`${r.id} ${r.status}`);Store.save();closeModal();render();toast(ok?'Approved and forwarded to reception':'Request rejected',ok?'ok':'');return null};
+ formModal({title:`Review ${esc(r.id)} — ${esc(m.name)}`,wide:true,pre:`<div class="note"><b>${esc(m.name)}</b> (${esc(m.id)}, ${esc(branch(r.branchId).name)}) requests <b>${fd(r.arrival)} – ${fd(r.departure)}</b>. Purpose: ${esc(r.purpose)}</div>`,
+  values:{from:r.arrival,to:r.departure,type:r.type,dept:r.prefDept,remarks:''},
+  fields:[{n:'from',l:'Approved stay from',t:'date',req:1},{n:'to',l:'Approved stay to',t:'date',req:1},{n:'type',l:'Member type',t:'select',opts:TYPES,req:1},{n:'dept',l:'Sewa department',t:'select',opts:deptOpts(),ph:'Assign later'},{n:'remarks',l:'Remarks (required for rejection)',t:'textarea',full:1}],
+  buttons:[{label:'Reject',cls:'bad',run:act(false)},{label:'Approve & forward to reception',cls:'ok',run:act(true)}]});
+}
+
+/* ===== Reception ===== */
+PAGES.reception={render(){
+ const R=regs(),t=today(),ed=canEdit('reception');
+ const exp=R.filter(r=>r.status==='Approved'),res=R.filter(r=>r.status==='Checked In'),dep=res.filter(r=>stayEnd(r)<=t);
+ const tab=curTab('reception','a'),q=(UI.f['rc.q']||'').toLowerCase();
+ const match=r=>!q||(r.id+mName(r.memberId)+r.memberId+(member(r.memberId)||{}).mobile).toLowerCase().includes(q);
+ const who2=r=>`<div class="who">${avatar(member(r.memberId))}<div><b>${esc(mName(r.memberId))}</b><br><small>${esc(r.memberId)} · ${esc(member(r.memberId).mobile)}</small></div></div>`;
+ const bedC=r=>{const a=activeAlloc(r.id);return a?esc(bedShort(bedO(a.bedId))):'<small>Not allocated</small>'};
+ let b='';
+ if(tab==='a')b=tbl([['Member',who2],['Branch',r=>esc(branch(r.branchId).name)],['Expected',r=>`${fd(stayStart(r))}${stayStart(r)===t?' <span class="b info">Today</span>':stayStart(r)<t?' <span class="b bad">Late</span>':''}`],['Until',r=>fd(stayEnd(r))],['Type',r=>badge(stayType(r))],['Bed',bedC],['',r=>ed?btn('Confirm arrival','rcArrive',r.id,'pri'):btn('View','regView',r.id)]],exp.filter(match).sort((a,c)=>stayStart(a).localeCompare(stayStart(c))),'No approved arrivals waiting.');
+ if(tab==='r'||tab==='d'){const L=(tab==='r'?res:dep).filter(match);b=tbl([['Member',who2],['Arrived',r=>fdt(r.actualIn)],['Expected departure',r=>fd(stayEnd(r))+(stayEnd(r)<t?' '+badge('Overdue'):stayEnd(r)===t?' <span class="b warn">Today</span>':'')],['Type',r=>badge(stayType(r))],['Accommodation',bedC],['',r=>(ed?btn('Check out','rcOut',r.id,'pri')+btn('Undo check-in','rcUndoIn',r.id):'')+btn('View','regView',r.id)]],L.sort((a,c)=>stayEnd(a).localeCompare(stayEnd(c))),'Nobody here.')}
+ if(tab==='h'){const L=R.filter(r=>r.actualIn).filter(match).sort((a,c)=>c.actualIn.localeCompare(a.actualIn)).slice(0,80);b=tbl([['Member',who2],['Arrived',r=>fdt(r.actualIn)],['Departed',r=>fdt(r.actualOut)],['Type',r=>badge(stayType(r))],['Status',r=>badge(r.status)],['',r=>btn('View','regView',r.id)+(ed&&r.status==='Checked Out'?btn('Undo check-out','rcUndoOut',r.id):'')]],L,'No visits yet.')}
+ /* lookup of members without a live visit */
+ let lk='';
+ if(q.length>=2){const ms=members().filter(m=>(m.id+m.name+m.mobile).toLowerCase().includes(q)&&!DB.regs.some(r=>r.memberId===m.id&&['Approved','Checked In'].includes(r.status))).slice(0,5);
+  if(ms.length)lk=`<div class="note">${ms.map(m=>`<div style="margin:4px 0">${esc(m.name)} (${esc(m.id)}) has no approved visit. ${DB.regs.some(r=>r.memberId===m.id&&r.status==='Submitted')?'A request is awaiting management approval.':ed?btn('Register walk-in','walkin',m.id):''}</div>`).join('')}</div>`}
+ return pageHead('Reception — Check-In / Check-Out','Only approved members can be checked in.',ed?pbtn('+ Walk-in visitor','walkin',''):'')+
+  `<div class="card"><div class="filters">${fi('rc.q','Search by Member ID, name or mobile…').replace('data-f=','data-full="1" data-f=')}</div>${lk}${tabsHtml('reception',[['a','Expected arrivals',exp.length],['r','Current residents',res.length],['d','Due / overdue departures',dep.length],['h','Visit history']])}${b}</div>`;
+}};
+function dtForm(title,note,label,def,run){
+ formModal({title,pre:`<div class="note">${note}</div>`,values:{dt:def},fields:[{n:'dt',l:'Date & time',t:'datetime-local',req:1}],buttons:[{label,run:v=>run(v.dt)}]});
+}
+
+/* ===== Accommodation ===== */
+PAGES.accommodation={render(){
+ const tab=curTab('accommodation','b'),ed=canEdit('accommodation'),R=regs(),st=bedStates();
+ const waiting=R.filter(r=>['Approved','Checked In'].includes(r.status)&&!activeAlloc(r.id)),res=R.filter(r=>activeAlloc(r.id)&&['Approved','Checked In'].includes(r.status)),clean=DB.beds.filter(b=>b.cleaning);
+ let b='';
+ if(tab==='b'){
+  const c={Available:0,Occupied:0,Reserved:0,Cleaning:0};st.forEach(s=>c[s.status]++);
+  b=`<div class="legend">${Object.keys(c).map(k=>`<span><i class="dot c-${k}"></i>${k} <b>${c[k]}</b></span>`).join('')}</div>
+   <div class="filters">${fs('acc.site',DB.sites.map(s=>({v:s.id,l:s.name})),'All sites',1)}${fs('acc.bld',DB.buildings.filter(x=>!UI.f['acc.site']||x.siteId===UI.f['acc.site']).map(x=>({v:x.id,l:x.name})),'All buildings',1)}${fs('acc.st',['Available','Occupied','Reserved','Cleaning'],'All statuses',1)}${fi('acc.q','Find resident…').replace('data-f=','data-full="1" data-f=')}</div>${this.board(st)}`;
+ }
+ if(tab==='w')b=tbl([['Member',r=>`<b>${esc(mName(r.memberId))}</b><br><small>${esc(r.memberId)} · ${esc(member(r.memberId).gender)}</small>`],['Stay',r=>`${fd(stayStart(r))} – ${fd(stayEnd(r))}`],['Status',r=>badge(r.status)],['Type',r=>badge(stayType(r))],['',r=>ed?btn('Assign bed','bedAssign',r.id,'pri'):'']],waiting,'Everyone approved has a bed.');
+ if(tab==='r')b=tbl([['Member',r=>`<b>${esc(mName(r.memberId))}</b><br><small>${esc(r.memberId)}</small>`],['Site › Building › Floor › Room › Bed',r=>esc(bedPath(bedO(activeAlloc(r.id).bedId)))],['Allocated',r=>`${fd(activeAlloc(r.id).from)} – ${fd(activeAlloc(r.id).to)}`],['Status',r=>badge(r.status==='Checked In'?'Occupied':'Reserved')],['',r=>ed?btn('Transfer','bedTransfer',r.id)+btn('Extend','bedExtend',r.id)+btn('Unassign bed','bedRelease',r.id):'']],res.sort((a,c)=>bedPath(bedO(activeAlloc(a.id).bedId)).localeCompare(bedPath(bedO(activeAlloc(c.id).bedId)))),'No allocations.');
+ if(tab==='c')b=tbl([['Bed',x=>esc(bedPath(x))],['',x=>ed?btn('Mark cleaned','bedClean',x.id,'ok'):'']],clean,'No beds waiting for cleaning.');
+ if(tab==='s')b=this.structure(ed);
+ const hdr=ed?`<button class="btn" data-act="stAdd" data-id="site">+ Add site</button><button class="btn pri" data-act="stAdd" data-id="building">+ Add building</button>${tab==='s'?'':`<button class="btn" data-act="tab" data-id="accommodation" data-x="s">Manage rooms &amp; beds</button>`}`:'';
+ return pageHead('Accommodation & Bed Management','Site → Building → Floor → Room → Bed. A bed can never be assigned to two people for overlapping dates.',hdr)+
+  `<div class="card">${tabsHtml('accommodation',[['b','Bed board'],['w','Awaiting bed',waiting.length],['r','Resident register',res.length],['c','Cleaning',clean.length],['s','Structure']])}${b}</div>`;
+},board(st){
+ const q=(UI.f['acc.q']||'').toLowerCase(),fs2=UI.f['acc.site']||'',fb=UI.f['acc.bld']||'',fst=UI.f['acc.st']||'';let html='';
+ DB.sites.filter(s=>!fs2||s.id===fs2).forEach(s=>DB.buildings.filter(b=>b.siteId===s.id&&(!fb||b.id===fb)).forEach(b=>{
+  let bh='';
+  b.floors.forEach(fl=>{let rh='';
+   DB.rooms.filter(r=>r.buildingId===b.id&&r.floor===fl).forEach(rm=>{
+    const beds=DB.beds.filter(x=>x.roomId===rm.id),shown=beds.filter(x=>{const s2=st.get(x.id);return(!fst||s2.status===fst)&&(!q||(s2.member&&(s2.member.name+s2.member.id).toLowerCase().includes(q)))});
+    if(!shown.length)return;const occ=beds.filter(x=>st.get(x.id).status==='Occupied').length;
+    rh+=`<div class="room"><div class="rh"><b>${esc(rm.name)}</b><span class="muted">${esc(rm.gender)} · ${occ}/${beds.length} occupied</span></div><div class="beds">${shown.map(x=>{const s2=st.get(x.id);return `<button class="bed s-${s2.status}" data-act="bedOpen" data-id="${x.id}" title="${s2.status}"><b>Bed ${esc(x.label)}</b><small>${s2.member?esc(s2.member.name):s2.status}</small></button>`}).join('')}</div></div>`});
+   if(rh)bh+=`<div class="fl">${esc(fl)} Floor</div><div class="rooms">${rh}</div>`});
+  if(bh)html+=`<h3 style="margin-top:14px">${esc(s.name)} › ${esc(b.name)}</h3>${bh}`}));
+ return html||'<div class="empty">No beds match the filters.</div>';
+},structure(ed){
+ const st=bedStates(),closed=UI.closed||(UI.closed={});
+ const tg=k=>`<button class="tgl" data-act="tgl" data-id="${esc(k)}" aria-label="Expand or collapse">${closed[k]?'▸':'▾'}</button>`;
+ const B=(label,act,id,cls)=>`<button class="btn sm ${cls||''}" data-act="${act}" data-id="${esc(id)}">${label}</button>`;
+ const bedsIn=rids=>{const q=new Set(rids);return DB.beds.filter(b=>q.has(b.roomId)).map(b=>b.id)};
+ const sum=bids=>{let o=0,r=0,c=0;bids.forEach(id=>{const x=st.get(id);if(!x)return;if(x.status==='Occupied')o++;else if(x.status==='Reserved')r++;else if(x.status==='Cleaning')c++});
+  return `<small class="muted">${bids.length} bed(s) · ${bids.length-o-r-c} free · ${o} occupied${r?` · ${r} reserved`:''}${c?` · ${c} cleaning`:''}</small>`};
+ const bedChip=x=>{const s2=st.get(x.id);
+  return `<span class="bchip s-${s2.status}" title="${esc(s2.status)}${s2.member?' — '+esc(s2.member.name):''}"><b>${esc(x.label)}</b><small>${esc(s2.member?s2.member.name:s2.status)}</small>${ed?`<button data-act="stEdit" data-id="bed|${x.id}" title="Rename bed" aria-label="Rename bed ${esc(x.label)}">✎</button><button data-act="stDel" data-id="bed|${x.id}" title="Delete bed" aria-label="Delete bed ${esc(x.label)}">×</button>`:''}</span>`};
+ const roomHtml=rm=>{const bs=DB.beds.filter(x=>x.roomId===rm.id);
+  return `<div class="trow"><b>${esc(rm.name)}</b><span class="chip">Room · ${esc(rm.gender)}</span>${sum(bs.map(x=>x.id))}${ed?`<span class="tacts">${B('+ Bed','stAdd','bed|'+rm.id)}${B('Edit','stEdit','room|'+rm.id)}${B('Delete','stDel','room|'+rm.id,'dng')}</span>`:''}</div>
+   <div class="bchips">${bs.map(bedChip).join('')||'<span class="muted">No beds yet — use “+ Bed”.</span>'}</div>`};
+ const floorHtml=(b,fl)=>{const fk='f:'+b.id+'|'+fl,fid='floor|'+b.id+'|'+encodeURIComponent(fl),fr=DB.rooms.filter(r=>r.buildingId===b.id&&r.floor===fl);
+  return `<div class="tnode"><div class="trow">${tg(fk)}<b>${esc(fl)} Floor</b><span class="chip">Floor</span>${sum(bedsIn(fr.map(r=>r.id)))}${ed?`<span class="tacts">${B('+ Room','stAdd','room|'+b.id+'|'+encodeURIComponent(fl))}${B('Rename','stEdit',fid)}${B('Delete','stDel',fid,'dng')}</span>`:''}</div>
+   ${closed[fk]?'':`<div class="kids">${fr.map(roomHtml).join('')||'<div class="muted" style="padding:6px 8px">No rooms on this floor yet — use “+ Room”.</div>'}</div>`}</div>`};
+ const bldHtml=b=>{const bk='b:'+b.id,rms=DB.rooms.filter(r=>r.buildingId===b.id);
+  return `<div class="tnode"><div class="trow">${tg(bk)}<b>${esc(b.name)}</b><span class="chip">Building</span>${sum(bedsIn(rms.map(r=>r.id)))}${ed?`<span class="tacts">${B('+ Floor','stAdd','floor|'+b.id)}${B('Edit','stEdit','building|'+b.id)}${B('Delete','stDel','building|'+b.id,'dng')}</span>`:''}</div>
+   ${closed[bk]?'':`<div class="kids">${b.floors.map(fl=>floorHtml(b,fl)).join('')||'<div class="muted" style="padding:6px 8px">No floors yet — use “+ Floor”.</div>'}</div>`}</div>`};
+ const siteHtml=s=>{const bls=DB.buildings.filter(b=>b.siteId===s.id),sk='s:'+s.id,rids=DB.rooms.filter(r=>bls.some(b=>b.id===r.buildingId)).map(r=>r.id);
+  return `<div class="tnode"><div class="trow">${tg(sk)}<b style="font-size:15px">${esc(s.name)}</b><span class="chip">Site</span>${sum(bedsIn(rids))}${ed?`<span class="tacts">${B('+ Building','stAdd','building|'+s.id)}${B('Rename','stEdit','site|'+s.id)}${B('Delete','stDel','site|'+s.id,'dng')}</span>`:''}</div>
+   ${closed[sk]?'':`<div class="kids">${bls.map(bldHtml).join('')||'<div class="muted" style="padding:6px 8px">No buildings in this site yet — use “+ Building”.</div>'}</div>`}</div>`};
+ return (ed?`<div class="acts" style="margin-bottom:10px">${B('+ Add site','stAdd','site','pri')}</div>`:'')+
+  `<p class="muted" style="margin-top:0">Add, rename or delete any level. A bed, room, floor, building or site can be deleted only while nobody is occupying or has reserved a bed in it; past stays keep the bed name in their history.</p><div class="tree">${DB.sites.map(siteHtml).join('')||'<div class="empty">No sites yet. Add your first site to begin.</div>'}</div>`;
+}};
+
+/** Assign / transfer a bed with Site → Building → Floor → Room → Bed cascade (only free beds are offered). */
+function bedModal(regId,presetBed,mode){
+ const r=reg(regId),m=member(r.memberId),cur=activeAlloc(regId),transfer=mode==='transfer';
+ const from0=transfer?(today()<cur.from?cur.from:today()>cur.to?cur.to:today()):(()=>{const s=stayStart(r);const a=r.actualIn?dayOf(r.actualIn):s;return a<s?a:(s<today()&&r.status==='Approved'?s:s)})();
+ const to0=transfer?cur.to:stayEnd(r);
+ const sel=id=>$('#'+id);
+ formModal({title:transfer?`Transfer bed — ${esc(m.name)}`:`Assign bed — ${esc(m.name)}`,wide:true,
+  pre:`<div class="note">${esc(m.name)} (${esc(m.gender)}) · approved stay ${fd(stayStart(r))} – ${fd(stayEnd(r))}${transfer?`<br>Current bed: ${esc(bedPath(bedO(cur.bedId)))} — the old allocation stays in history.`:''}</div>`,
+  values:{from:from0,to:to0},
+  fields:[{n:'from',l:transfer?'Move on':'Bed from',t:'date',req:1},{n:'to',l:'Bed until',t:'date',req:1,ro:transfer},
+   {n:'site',l:'Site',t:'select',opts:[],ph:'Select site',req:1},{n:'bld',l:'Building',t:'select',opts:[],ph:'Select building',req:1},{n:'floor',l:'Floor',t:'select',opts:[],ph:'Select floor',req:1},{n:'room',l:'Room',t:'select',opts:[],ph:'Select room',req:1},{n:'bed',l:'Bed (free for these dates)',t:'select',opts:[],ph:'Select bed',req:1,full:1,hint:'<span id="gWarn"></span>'}],
+  buttons:[{label:transfer?'Transfer':'Assign bed',run(v){
+   const e=transfer?transferBed(regId,v.bed,v.from):allocate(regId,v.bed,v.from,v.to,'Allocation');
+   if(e)return e;Store.save();closeModal();render();toast(transfer?'Bed transferred; old bed marked for cleaning':'Bed assigned','ok');return null}}],
+  onOpen(){
+   const free=b=>!b.cleaning&&!conflicts(b.id,sel('f-from').value,sel('f-to').value,transfer?cur.id:null).length;
+   const cnt=f=>DB.beds.filter(b=>free(b)&&f(b)).length;
+   const set=(id,opts,ph,keep)=>{const el=sel('f-'+id),v=keep===false?'':el.value;el.innerHTML=optHtml(opts,v,ph);if(!opts.some(o=>o.v===v))el.value=''};
+   const fillSite=()=>set('site',DB.sites.map(s=>({v:s.id,l:`${s.name} (${cnt(b=>bldg(room(b.roomId).buildingId).siteId===s.id)} free)`})),'Select site');
+   const fillBld=()=>set('bld',DB.buildings.filter(b=>b.siteId===sel('f-site').value).map(b=>({v:b.id,l:`${b.name} (${cnt(x=>room(x.roomId).buildingId===b.id)} free)`})),'Select building');
+   const fillFl=()=>{const b=bldg(sel('f-bld').value);set('floor',b?b.floors.map(f=>({v:f,l:`${f} Floor (${cnt(x=>room(x.roomId).buildingId===b.id&&room(x.roomId).floor===f)} free)`})):[],'Select floor')};
+   const fillRm=()=>set('room',DB.rooms.filter(x=>x.buildingId===sel('f-bld').value&&x.floor===sel('f-floor').value).map(x=>({v:x.id,l:`${x.name} · ${x.gender} (${cnt(b=>b.roomId===x.id)} free)`})),'Select room');
+   const fillBd=()=>{set('bed',DB.beds.filter(b=>b.roomId===sel('f-room').value&&free(b)).map(b=>({v:b.id,l:'Bed '+b.label})),'Select bed');warn()};
+   const warn=()=>{const rm=room(sel('f-room').value);sel('gWarn').textContent=rm&&rm.gender!=='Any'&&rm.gender!==m.gender?`⚠ This room is marked ${rm.gender}; member is ${m.gender}.`:''};
+   const all=()=>{fillSite();fillBld();fillFl();fillRm();fillBd()};
+   ['site','bld','floor','room'].forEach((id,i)=>sel('f-'+id).onchange=()=>[fillBld,fillFl,fillRm,fillBd][i]&&[fillBld,fillFl,fillRm,fillBd].slice(i).forEach(f=>f()));
+   sel('f-bed').onchange=warn;sel('f-from').onchange=sel('f-to').onchange=all;
+   all();
+   if(presetBed){const b=bedO(presetBed),rm=room(b.roomId),bl=bldg(rm.buildingId);sel('f-site').value=bl.siteId;fillBld();sel('f-bld').value=bl.id;fillFl();sel('f-floor').value=rm.floor;fillRm();sel('f-room').value=rm.id;fillBd();sel('f-bed').value=b.id;warn()}
+  }});
+}
+function bedDetail(bedId){
+ const b=bedO(bedId),s=bedStates().get(bedId),ed=canEdit('accommodation'),hs=DB.allocs.filter(a=>a.bedId===bedId).sort((x,y)=>y.from.localeCompare(x.from)).slice(0,6);
+ let act='';
+ if(ed){
+  if(s.status==='Cleaning')act+=`<button class="btn ok" data-act="bedClean" data-id="${b.id}">Mark cleaned</button>`;
+  if(s.status==='Available'){const w=regs().filter(r=>['Approved','Checked In'].includes(r.status)&&!activeAlloc(r.id));act+=w.length?`<select class="in" id="pickWait">${optHtml(w.map(r=>({v:r.id,l:mName(r.memberId)+' ('+fd(stayStart(r))+' – '+fd(stayEnd(r))+')'})),'','Assign to…')}</select><button class="btn pri" id="goAssign">Assign</button>`:'<span class="muted">No approved member is waiting for a bed.</span>'}
+  if(s.reg&&s.status==='Occupied')act+=`<button class="btn" data-act="bedTransfer" data-id="${s.reg.id}">Transfer</button><button class="btn" data-act="bedExtend" data-id="${s.reg.id}">Extend stay</button>`;
+  if(s.reg&&['Reserved','Occupied'].includes(s.status))act+=`<button class="btn" data-act="bedRelease" data-id="${s.reg.id}">${s.status==='Reserved'?'Release reservation':'Unassign bed'}</button>`;
+  if(s.status==='Available')act+=`<button class="btn" data-act="bedDirty" data-id="${b.id}">Mark for cleaning</button>`;
+  act+=`<button class="btn" data-act="stEdit" data-id="bed|${b.id}">Rename bed</button><button class="btn dng" data-act="stDel" data-id="bed|${b.id}">Delete bed</button>`;
+ }
+ modal({title:`Bed ${esc(b.label)} ${badge(s.status)}`,body:`<p class="muted">${esc(bedPath(b))}</p>${s.member?`<div class="note"><b>${esc(s.member.name)}</b> (${esc(s.member.id)}) · ${fd(s.alloc.from)} – ${fd(s.alloc.to)}</div>`:''}<div class="acts" style="margin:12px 0">${act}</div>
+  <h3>Recent history</h3>${tbl([['Member',a=>esc(mName(a.memberId))],['From',a=>fd(a.from)],['To',a=>fd(a.to)],['Note',a=>esc(a.active?'Current':a.endReason||'Closed')]],hs,'Never allocated.')}`,footer:'<button class="btn" data-act="closeModal">Close</button>',
+  onOpen(){const g=$('#goAssign');if(g)g.onclick=()=>{const v=$('#pickWait').value;if(!v){toast('Choose a member first');return}bedModal(v,bedId,'assign')}}});
+}
+/* ---------- Structure editing: add / rename / move / delete at every level ---------- */
+const sidParts=id=>{const p=String(id).split('|');return [p[0],p[1],p[2]==null?p[2]:decodeURIComponent(p[2])]};
+const nextLabels=(rid,n)=>{const used=new Set(DB.beds.filter(b=>b.roomId===rid).map(b=>b.label.toLowerCase())),out=[];for(let i=0;out.length<n&&i<500;i++){const l=i<26?String.fromCharCode(65+i):String(i+1);if(!used.has(l.toLowerCase())){out.push(l);used.add(l.toLowerCase())}}return out};
+const parseFloors=t=>[...new Set(String(t).split(',').map(x=>x.trim()).filter(Boolean))];
+const sameName=(a,b)=>String(a).toLowerCase()===String(b).toLowerCase();
+function structDone(msg){Store.save();closeModal();render();toast(msg,'ok');return null}
+function structAdd(kind,a,b){
+ const bldOpts=()=>DB.buildings.map(x=>({v:x.id,l:`${site(x.siteId).name} › ${x.name}`}));
+ /* a child can only be added once its parent exists — send the user to the missing parent first */
+ const need={building:['site',DB.sites.length,'Add a site first — a building belongs to a site.'],floor:['building',DB.buildings.length,'Add a building first — a floor belongs to a building.'],room:['building',DB.buildings.length,'Add a building first — a room belongs to a building.'],bed:['room',DB.rooms.length,'Add a room first — a bed belongs to a room.']}[kind];
+ if(need&&!need[1]){toast(need[2]);return structAdd(need[0],'');}
+ if(kind==='site')return formModal({title:'Add site',fields:[{n:'name',l:'Site name',req:1,ph:'e.g. Main Campus'}],buttons:[{label:'Add site',run(v){
+  if(DB.sites.some(x=>sameName(x.name,v.name)))return 'A site with this name already exists.';
+  DB.sites.push({id:nid('st','ST',1),name:v.name});log('Added site '+v.name);return structDone('Site added')}}]});
+ if(kind==='building')return formModal({title:'Add building',values:{siteId:a||'',floors:'Ground'},fields:[{n:'siteId',l:'Site',t:'select',opts:DB.sites.map(x=>({v:x.id,l:x.name})),req:1,ph:'Select site'},{n:'name',l:'Building name',req:1,ph:'e.g. Mangal Bhawan'},{n:'floors',l:'Floors (comma-separated)',req:1,full:1,ph:'Ground, First, Second',hint:'You can add, rename or delete floors later.'}],
+  buttons:[{label:'Add building',run(v){
+   if(DB.buildings.some(x=>x.siteId===v.siteId&&sameName(x.name,v.name)))return 'This site already has a building with that name.';
+   const fl=parseFloors(v.floors);if(!fl.length)return 'Enter at least one floor.';
+   DB.buildings.push({id:nid('bl','BL',1),siteId:v.siteId,name:v.name,floors:fl});log('Added building '+v.name);return structDone('Building added')}}]});
+ if(kind==='floor')return formModal({title:'Add floor',values:{bid:a||''},fields:[{n:'bid',l:'Building',t:'select',opts:bldOpts(),req:1,ph:'Select building'},{n:'name',l:'Floor name',req:1,ph:'e.g. Third'}],
+  buttons:[{label:'Add floor',run(v){const bl=bldg(v.bid);if(bl.floors.some(f=>sameName(f,v.name)))return 'This floor already exists in the building.';bl.floors.push(v.name);log(`Added ${v.name} floor to ${bl.name}`);return structDone('Floor added')}}]});
+ if(kind==='room'){let want=b||'';
+  return formModal({title:'Add room',values:{bid:a||'',gender:'Any',count:4},fields:[{n:'bid',l:'Building',t:'select',opts:bldOpts(),req:1,ph:'Select building'},{n:'floor',l:'Floor',t:'select',opts:[],req:1,ph:'Select floor'},{n:'name',l:'Room name / number',req:1,ph:'e.g. M105'},{n:'gender',l:'Intended for',t:'select',opts:['Male','Female','Any'],req:1},{n:'count',l:'Number of beds to create',t:'number',req:1,hint:'0 is fine — you can add beds one by one later.'}],
+   buttons:[{label:'Add room',run(v){const n=+v.count;if(!(n>=0&&n<=30))return 'Beds must be between 0 and 30.';
+    if(DB.rooms.some(r=>r.buildingId===v.bid&&sameName(r.name,v.name)))return 'A room with this name already exists in this building.';
+    const rid=nid('rm','RM',3);DB.rooms.push({id:rid,buildingId:v.bid,floor:v.floor,name:v.name,gender:v.gender});
+    nextLabels(rid,n).forEach(l=>DB.beds.push({id:nid('bd','BD',3),roomId:rid,label:l,cleaning:false}));
+    log(`Added room ${v.name} with ${n} bed(s)`);return structDone('Room added')}}],
+   onOpen(){const fill=()=>{const bl=bldg($('#f-bid').value);$('#f-floor').innerHTML=optHtml(bl?bl.floors:[],want,'Select floor')};fill();$('#f-bid').onchange=()=>{want='';fill()};$('#f-floor').onchange=()=>{want=$('#f-floor').value}}})}
+ if(kind==='bed'){const rm=room(a);
+  return formModal({title:`Add bed${rm?' to '+esc(rm.name):''}`,values:{rid:a||'',count:1,label:rm?nextLabels(a,1)[0]:''},fields:[{n:'rid',l:'Room',t:'select',opts:DB.rooms.map(r=>({v:r.id,l:`${bldg(r.buildingId).name} · ${r.floor} · ${r.name}`})),req:1,ph:'Select room'},{n:'count',l:'How many beds',t:'number',req:1},{n:'label',l:'Bed label (used when adding one bed)',hint:'Keep the suggestion or type your own, e.g. A, B, 1, Upper.'}],
+   buttons:[{label:'Add',run(v){const n=+v.count;if(!(n>=1&&n<=30))return 'Add between 1 and 30 beds.';
+    let labels;if(n===1&&v.label){if(DB.beds.some(x=>x.roomId===v.rid&&sameName(x.label,v.label)))return 'This bed label already exists in the room.';labels=[v.label]}else labels=nextLabels(v.rid,n);
+    labels.forEach(l=>DB.beds.push({id:nid('bd','BD',3),roomId:v.rid,label:l,cleaning:false}));log(`Added ${n} bed(s) to ${(room(v.rid)||{}).name}`);return structDone(`${n} bed(s) added`)}}]})}
+}
+function structEdit(kind,a,b){
+ if(kind==='site'){const s0=site(a);return formModal({title:'Rename site',values:{name:s0.name},fields:[{n:'name',l:'Site name',req:1}],buttons:[{label:'Save',run(v){
+  if(DB.sites.some(x=>x.id!==a&&sameName(x.name,v.name)))return 'A site with this name already exists.';log(`Renamed site ${s0.name} → ${v.name}`);s0.name=v.name;return structDone('Site updated')}}]})}
+ if(kind==='building'){const bl=bldg(a);return formModal({title:`Edit building — ${esc(bl.name)}`,values:{name:bl.name,siteId:bl.siteId},fields:[{n:'name',l:'Building name',req:1},{n:'siteId',l:'Site',t:'select',opts:DB.sites.map(x=>({v:x.id,l:x.name})),req:1,ph:'Select site'}],
+  buttons:[{label:'Save',run(v){if(DB.buildings.some(x=>x.id!==a&&x.siteId===v.siteId&&sameName(x.name,v.name)))return 'That site already has a building with this name.';log(`Edited building ${bl.name} → ${v.name}`);bl.name=v.name;bl.siteId=v.siteId;return structDone('Building updated')}}]})}
+ if(kind==='floor'){const bl=bldg(a),old=b;return formModal({title:`Rename floor — ${esc(bl.name)}`,values:{name:old},fields:[{n:'name',l:'Floor name',req:1}],
+  buttons:[{label:'Save',run(v){if(!sameName(v.name,old)&&bl.floors.some(f=>sameName(f,v.name)))return 'This floor already exists in the building.';
+   bl.floors=bl.floors.map(f=>f===old?v.name:f);DB.rooms.forEach(r=>{if(r.buildingId===a&&r.floor===old)r.floor=v.name});log(`Renamed floor ${old} → ${v.name} (${bl.name})`);return structDone('Floor renamed')}}]})}
+ if(kind==='room'){const rm=room(a),bl=bldg(rm.buildingId);return formModal({title:`Edit room — ${esc(rm.name)}`,values:{name:rm.name,floor:rm.floor,gender:rm.gender},fields:[{n:'name',l:'Room name / number',req:1},{n:'floor',l:'Floor',t:'select',opts:bl.floors,req:1,ph:'Select floor'},{n:'gender',l:'Intended for',t:'select',opts:['Male','Female','Any'],req:1}],
+  buttons:[{label:'Save',run(v){if(DB.rooms.some(r=>r.id!==a&&r.buildingId===rm.buildingId&&sameName(r.name,v.name)))return 'Another room in this building already has this name.';log(`Edited room ${rm.name} → ${v.name}`);rm.name=v.name;rm.floor=v.floor;rm.gender=v.gender;return structDone('Room updated')}}]})}
+ if(kind==='bed'){const bd=bedO(a);return formModal({title:`Rename bed — ${esc(bd.label)}`,values:{label:bd.label},fields:[{n:'label',l:'Bed label',req:1}],buttons:[{label:'Save',run(v){
+  if(DB.beds.some(x=>x.id!==a&&x.roomId===bd.roomId&&sameName(x.label,v.label)))return 'This bed label already exists in the room.';log(`Renamed bed ${bd.label} → ${v.label}`);bd.label=v.label;return structDone('Bed renamed')}}]})}
+}
+/** What would be removed if this node were deleted. */
+function structPlan(kind,a,b){
+ let roomIds=[],noun=kind,label='',apply=()=>{};
+ if(kind==='site'){const s0=site(a),bls=DB.buildings.filter(x=>x.siteId===a);roomIds=DB.rooms.filter(r=>bls.some(x=>x.id===r.buildingId)).map(r=>r.id);label=`${s0.name} (${bls.length} building(s))`;apply=()=>{DB.buildings=DB.buildings.filter(x=>x.siteId!==a);DB.sites=DB.sites.filter(x=>x.id!==a)}}
+ else if(kind==='building'){const bl=bldg(a);roomIds=DB.rooms.filter(r=>r.buildingId===a).map(r=>r.id);label=`${bl.name} (${bl.floors.length} floor(s))`;apply=()=>{DB.buildings=DB.buildings.filter(x=>x.id!==a)}}
+ else if(kind==='floor'){const bl=bldg(a);roomIds=DB.rooms.filter(r=>r.buildingId===a&&r.floor===b).map(r=>r.id);label=`${b} floor of ${bl.name}`;apply=()=>{bl.floors=bl.floors.filter(f=>f!==b)}}
+ else if(kind==='room'){roomIds=[a];label=room(a).name}
+ else if(kind==='bed'){const bd=bedO(a);return {noun,label:`bed ${bd.label} in ${room(bd.roomId).name}`,roomIds:[],bedIds:[a],apply}}
+ const q=new Set(roomIds);return {noun,label,roomIds,bedIds:DB.beds.filter(x=>q.has(x.roomId)).map(x=>x.id),apply};
+}
+function structDelete(kind,a,b){
+ const p=structPlan(kind,a,b),bs=new Set(p.bedIds);
+ const live=DB.allocs.filter(x=>x.active&&bs.has(x.bedId));
+ if(live.length){const x=live[0];return modal({title:'Cannot delete yet',body:`<p><b>${live.length}</b> bed(s) in this ${esc(p.noun)} are occupied or reserved — for example <b>${esc(mName(x.memberId))}</b> in ${esc(bedShort(bedO(x.bedId)))}.</p><p class="muted">Transfer or release those members first (Accommodation → Resident register), then delete.</p>`,footer:'<button class="btn" data-act="closeModal">Close</button>'})}
+ const pastN=DB.allocs.filter(x=>!x.active&&bs.has(x.bedId)).length;
+ const parts=[];if(p.roomIds.length)parts.push(`${p.roomIds.length} room(s)`);parts.push(`${p.bedIds.length} bed(s)`);
+ confirmBox(`Delete ${p.noun}`,`Delete <b>${esc(p.label)}</b>?<br>This removes ${parts.join(' and ')}.${pastN?` ${pastN} past stay record(s) keep the bed name in their history.`:''}`,'Delete',()=>{
+  DB.allocs.forEach(x=>{if(bs.has(x.bedId))x.bedPath=bedShort(bedO(x.bedId))});
+  const rs=new Set(p.roomIds);DB.beds=DB.beds.filter(x=>!bs.has(x.id));DB.rooms=DB.rooms.filter(x=>!rs.has(x.id));p.apply();
+  UI.f['acc.site']='';UI.f['acc.bld']='';log(`Deleted ${p.noun} ${p.label}`);Store.save();render();toast(ucase(p.noun)+' deleted','ok')},true);
+}
+/** Add / edit a login user (demo users — see Admin → Users). */
+function userForm(id){
+ const ex=id?DB.users.find(u=>u.id===id):null;
+ formModal({title:ex?'Edit user':'Add user',values:ex?Object.assign({},ex):{role:'reception'},fields:[{n:'name',l:'Display name',req:1},{n:'role',l:'Role',t:'select',opts:Object.keys(ROLES).map(r=>({v:r,l:ROLES[r].label})),req:1,ph:'Select role'},
+  {n:'branchId',l:'Branch (Branch Coordinator only)',t:'select',opts:DB.branches.map(b=>({v:b.id,l:`${b.name} (${b.state})`})),ph:'Select branch'},{n:'deptId',l:'Department (Department Supervisor only)',t:'select',opts:DB.depts.map(d=>({v:d.id,l:d.name})),ph:'Select department'}],
+  buttons:[{label:'Save',run(v){
+   if(v.role==='coordinator'&&!v.branchId)return 'A Branch Coordinator needs a branch.';
+   if(v.role==='supervisor'&&!v.deptId)return 'A Department Supervisor needs a department.';
+   if(ex&&ex.role==='superadmin'&&v.role!=='superadmin'&&DB.users.filter(u=>u.role==='superadmin').length<=1)return 'Keep at least one Super Admin.';
+   const rec={name:v.name,role:v.role,branchId:v.role==='coordinator'?v.branchId:'',deptId:v.role==='supervisor'?v.deptId:''};
+   if(ex)Object.assign(ex,rec);else DB.users.push(Object.assign({id:nid('us','u',1)},rec));
+   if(ex&&CUR&&ex.id===CUR.id)CUR=Object.assign({},ex);
+   log(`${ex?'Updated':'Added'} user ${v.name}`);Store.save();closeModal();render();toast('User saved','ok');return null}}],
+  onOpen(){const t=()=>{const r=$('#f-role').value;$('#f-branchId').closest('.fld').hidden=r!=='coordinator';$('#f-deptId').closest('.fld').hidden=r!=='supervisor'};$('#f-role').onchange=t;t()}});
+}
+
+/* ===== Sewa Departments ===== */
+PAGES.departments={render(){
+ const tab=curTab('departments','o'),t=today(),R=regs();
+ const res=R.filter(r=>r.status==='Checked In'||r.status==='Approved'),un=res.filter(r=>!activeDuty(r.id));
+ let b='';
+ const scopedD=DB.depts.filter(x=>CUR.role!=='supervisor'||x.id===CUR.deptId);
+ if(tab==='o')b=`<div class="grid g4">${scopedD.map(x=>{const n=DB.duties.filter(u=>u.deptId===x.id&&u.status==='Active').length;return `<div class="stat"><div class="l">${esc(x.name)}${x.active?'':' (inactive)'}</div><div class="v">${n}</div><div class="s">Supervisor: ${esc(x.supervisor)}</div>${canEdit('departments')&&CUR.role!=='supervisor'?`<div style="margin-top:8px">${btn('Edit','deptEdit',x.id)} ${btn('Delete','deptDelete',x.id,'dng')}</div>`:''}</div>`}).join('')}</div>`;
+ if(tab==='a'){
+  b=`${un.length&&CUR.role!=='supervisor'?`<div class="alert info"><span><b>${un.length}</b> member(s) without a sewa assignment: ${un.slice(0,4).map(r=>esc(mName(r.memberId))).join(', ')}${un.length>4?'…':''}</span></div><div style="margin-bottom:10px">${un.map(r=>canEdit('departments')?btn('Assign: '+esc(mName(r.memberId)),'dutyAssign',r.id,'pri'):'').join(' ')}</div>`:''}
+  <div class="filters">${fi('du.q','Search member…')}${fs('du.dp',deptOpts(),'All departments')}${fs('du.sh',SHIFTS,'All shifts')}</div><div id="tbl">${this.table()}</div>`;
+ }
+ if(tab==='t'){
+  const date=UI.f['at.date']||t;
+  const L=DB.duties.filter(d=>d.from<=date&&date<=d.to&&scopeReg(reg(d.regId))&&onSite(reg(d.regId),date)&&(!UI.f['at.dp']||d.deptId===UI.f['at.dp'])&&(CUR.role!=='supervisor'||d.deptId===CUR.deptId));
+  const seen={};const rows=L.filter(d=>{if(seen[d.regId])return false;seen[d.regId]=1;return dutyOn(d.regId,date)===d});
+  b=`<div class="filters"><input type="date" class="in" data-f="at.date" data-full="1" value="${date}" max="${t}">${fs('at.dp',deptOpts(),'All departments',1)}${rows.some(d=>canDept(d.deptId))&&date<=t?`<button class="btn sm" data-act="attAll">Mark all Present</button>`:''}</div>`+
+   tbl([['Member',d=>`<b>${esc(mName(d.memberId))}</b><br><small>${esc(d.memberId)}</small>`],['Department',d=>esc(dept(d.deptId).name)],['Shift',d=>esc(d.shift)],['Attendance',d=>canDept(d.deptId)&&date<=t?`<select class="in" data-att="${d.regId}">${optHtml(ATT,attStatus(date,d.regId))}</select>`:badge(attStatus(date,d.regId))]],rows,'Nobody on duty for this date.');
+ }
+ if(tab==='h')b=tbl([['Member',d=>esc(mName(d.memberId))],['Department',d=>esc(dept(d.deptId).name)],['Shift',d=>esc(d.shift)],['Supervisor',d=>esc(d.supervisor)],['From',d=>fd(d.from)],['To',d=>fd(d.to)],['Status',d=>badge(d.status)],['',d=>canDept(d.deptId)?btn('Delete','dutyDelete',d.id,'dng'):'']],DB.duties.filter(d=>scopeReg(reg(d.regId))&&(CUR.role!=='supervisor'||d.deptId===CUR.deptId)).sort((a,c)=>c.from.localeCompare(a.from)).slice(0,120),'No history.');
+ return pageHead('Sewa Department Management','Assign sewadar to departments and shifts, record attendance, and keep full duty history.',canEdit('departments')&&CUR.role!=='supervisor'?pbtn('+ Add department','deptAdd'):'')+
+  `<div class="card">${tabsHtml('departments',[['o','Overview'],['a','Assignments',DB.duties.filter(d=>d.status==='Active'&&scopeReg(reg(d.regId))).length],['t','Attendance'],['h','Duty history']])}${b}</div>`;
+},table(){
+ const q=(UI.f['du.q']||'').toLowerCase(),dp=UI.f['du.dp'],sh=UI.f['du.sh'];
+ const L=DB.duties.filter(d=>d.status==='Active'&&scopeReg(reg(d.regId))&&(CUR.role!=='supervisor'||d.deptId===CUR.deptId)&&(!dp||d.deptId===dp)&&(!sh||d.shift===sh)&&(!q||(mName(d.memberId)+d.memberId).toLowerCase().includes(q)));
+ return tbl([['Member',d=>`<b>${esc(mName(d.memberId))}</b><br><small>${esc(d.memberId)}</small>`],['Department',d=>esc(dept(d.deptId).name)],['Supervisor',d=>esc(d.supervisor)],['Shift',d=>esc(shiftLbl(d.shift))],['Duty period',d=>`${fd(d.from)} – ${fd(d.to)}`],['Status',d=>badge(d.status)],
+  ['',d=>canDept(d.deptId)?btn('Change','dutyChange',d.regId)+btn('End','dutyEnd',d.regId):'']],L,'No active assignments.');
+}};
+function dutyForm(regId,change){
+ const r=reg(regId),cur=activeDuty(regId),m=member(r.memberId),t=today();
+ const startDef=change?t:(r.actualIn&&dayOf(r.actualIn)>stayStart(r)?dayOf(r.actualIn):(stayStart(r)>t?stayStart(r):t));
+ formModal({title:`${change?'Change':'Assign'} sewa — ${esc(m.name)}`,pre:`<div class="note">Approved stay ${fd(stayStart(r))} – ${fd(stayEnd(r))}${change?`<br>Current: ${esc(dept(cur.deptId).name)}, ${cur.shift} shift — kept in history.`:''}</div>`,
+  values:{deptId:change?cur.deptId:(r.approvedDept||''),shift:change?cur.shift:(SHIFTS[0]||''),supervisor:change?cur.supervisor:((dept(r.approvedDept)||{}).supervisor||''),from:startDef,to:stayEnd(r)},
+  fields:[{n:'deptId',l:'Department',t:'select',opts:deptOpts().filter(o=>CUR.role!=='supervisor'||o.v===CUR.deptId),req:1,ph:'Select'},{n:'shift',l:'Shift',t:'select',opts:SHIFTS.map(x=>({v:x,l:shiftLbl(x)})),req:1},{n:'supervisor',l:'Supervisor (auto-filled from the department; change if needed)',full:1},{n:'from',l:'Duty start',t:'date',req:1},{n:'to',l:'Duty end',t:'date',req:1}],
+  onOpen(){$('#f-deptId').onchange=e=>{const d=dept(e.target.value);if(d)$('#f-supervisor').value=d.supervisor||''}},
+  buttons:[{label:change?'Save change':'Assign',run(v){const e=giveDuty(regId,v,change);if(e)return e;Store.save();closeModal();render();toast('Sewa saved','ok');return null}}]});
+}
+function deptForm(id){
+ const ex=id?dept(id):null;
+ formModal({title:ex?'Edit department':'Add department',values:ex?{name:ex.name,supervisor:ex.supervisor,active:ex.active?'Yes':'No'}:{active:'Yes'},fields:[{n:'name',l:'Department name',req:1},{n:'supervisor',l:'Supervisor',req:1},{n:'active',l:'Active',t:'select',opts:['Yes','No'],req:1}],
+  buttons:[{label:'Save',run(v){if(DB.depts.some(x=>x.id!==id&&x.name.toLowerCase()===v.name.toLowerCase()))return 'A department with this name exists.';
+   if(ex)Object.assign(ex,{name:v.name,supervisor:v.supervisor,active:v.active==='Yes'});else DB.depts.push({id:nid('dp','DP',2),name:v.name,supervisor:v.supervisor,active:v.active==='Yes'});
+   log('Saved department '+v.name);Store.save();closeModal();render();return null}}]});
+}
+
+/* ===== Monthly / Long-Term ===== */
+PAGES.longterm={render(){
+ const t=today(),ed=canEdit('longterm'),L=regs().filter(r=>['Monthly','Long-Term'].includes(stayType(r))&&['Approved','Checked In'].includes(r.status)).sort((a,c)=>stayEnd(a).localeCompare(stayEnd(c)));
+ const od=L.filter(r=>r.status==='Checked In'&&stayEnd(r)<t),soon=L.filter(r=>r.status==='Checked In'&&diffDays(t,stayEnd(r))>=0&&diffDays(t,stayEnd(r))<=7);
+ const left=r=>{const n=diffDays(t,stayEnd(r));return n<0?`<span class="b bad">${-n}d overdue</span>`:n<=7?`<span class="b warn">${n}d left</span>`:`${n}d`};
+ return pageHead('Monthly & Long-Term Sewadar','Approved stay period, accommodation, duties, attendance, extensions and departures.',canEdit('prereg')?pbtn('+ Register monthly / long-term','regNewLT',''):'')+
+  (od.length?`<div class="alert bad"><span><b>${od.length}</b> stay(s) have passed the approved end date: ${od.map(r=>esc(mName(r.memberId))).join(', ')}</span></div>`:'')+(soon.length?`<div class="alert"><span><b>${soon.length}</b> stay(s) expiring within 7 days: ${soon.map(r=>esc(mName(r.memberId))+' ('+diffDays(t,stayEnd(r))+'d)').join(', ')}</span></div>`:'')+
+  `<div class="card">${tbl([['Member',r=>`<b>${esc(mName(r.memberId))}</b><br><small>${esc(r.memberId)} · ${esc(branch(r.branchId).name)}</small>`],['Type',r=>badge(stayType(r))],['Approved stay',r=>`${fd(stayStart(r))} – ${fd(stayEnd(r))}`],['Time left',left],['Accommodation',r=>{const a=activeAlloc(r.id);return a?esc(bedShort(bedO(a.bedId))):'<small>Not allocated</small>'}],
+   ['Sewa',r=>{const d=activeDuty(r.id);return d?esc(dept(d.deptId).name)+'<br><small>'+d.shift+'</small>':'<small>Unassigned</small>'}],['Attendance',r=>attPct(r.id)==null?'—':attPct(r.id)+'%'],['Extension',r=>pendingExt(r)?badge('Pending'):'—'],
+   ['',r=>btn('View','regView',r.id)+(canEdit('accommodation')?btn('Extend','bedExtend',r.id):ed?btn('Request ext.','extReq',r.id):'')+(canEdit('accommodation')&&activeAlloc(r.id)?btn('Transfer','bedTransfer',r.id):'')+(canEdit('departments')&&r.status==='Checked In'?(activeDuty(r.id)?btn('Change sewa','dutyChange',r.id):btn('Assign sewa','dutyAssign',r.id)):'')+(canEdit('reception')&&r.status==='Checked In'?btn('Check out','rcOut',r.id):'')]],L,'No monthly or long-term sewadar right now.')}</div>`;
+}};
+
+/* ===== Reports ===== */
+const inRng=(c,r)=>(!c.from&&!c.to)||overlaps(stayStart(r),stayEnd(r),c.from||'0000-01-01',c.to||'9999-12-31');
+function rctx(){const f=UI.f;return {from:f['rp.from']||'',to:f['rp.to']||'',br:f['rp.br']||'',st:f['rp.st']||'',dp:f['rp.dp']||'',q:(f['rp.q']||'').toLowerCase(),day:f['rp.day']||today()}}
+function rRegs(c){return regs().filter(r=>{const m=member(r.memberId);return(!c.br||r.branchId===c.br)&&(!c.st||branch(r.branchId).state===c.st)&&(!c.q||(m.name+m.id+m.mobile).toLowerCase().includes(c.q))&&inRng(c,r)})}
+const bedCols=r=>{const a=activeAlloc(r.id);if(!a)return ['','',''];const b=bedO(a.bedId),rm=room(b.roomId);return [bldg(rm.buildingId).name,rm.floor+' / '+rm.name,'Bed '+b.label]};
+const deptOf=r=>{const d=activeDuty(r.id);return d?dept(d.deptId).name:''};
+const REPORTS=[
+ {id:'resident',name:'Current resident register',uses:['branch','state','dept','q'],run(c){
+  return {cols:['Member ID','Name','Mobile','Branch','Type','Arrived','Expected out','Building','Floor / Room','Bed','Department'],
+   rows:regs().filter(r=>r.status==='Checked In'&&(!c.br||r.branchId===c.br)&&(!c.st||branch(r.branchId).state===c.st)&&(!c.dp||(activeDuty(r.id)||{}).deptId===c.dp)&&(!c.q||(mName(r.memberId)+r.memberId).toLowerCase().includes(c.q)))
+    .map(r=>[r.memberId,mName(r.memberId),member(r.memberId).mobile,branch(r.branchId).name,stayType(r),fdt(r.actualIn),fd(stayEnd(r)),...bedCols(r),deptOf(r)])}}},
+ {id:'today',name:"Arrivals & departures (by day)",uses:['day','branch'],run(c){
+  const rows=[];regs().filter(r=>!c.br||r.branchId===c.br).forEach(r=>{
+   const arrD=r.actualIn?dayOf(r.actualIn):stayStart(r);if(arrD===c.day&&['Approved','Checked In','Checked Out'].includes(r.status))rows.push([r.memberId,mName(r.memberId),branch(r.branchId).name,'Arrival',r.actualIn?fdt(r.actualIn):fd(stayStart(r)),r.actualIn?'Arrived':'Expected']);
+   const depD=r.actualOut?dayOf(r.actualOut):stayEnd(r);if(depD===c.day&&['Checked In','Checked Out'].includes(r.status))rows.push([r.memberId,mName(r.memberId),branch(r.branchId).name,'Departure',r.actualOut?fdt(r.actualOut):fd(stayEnd(r)),r.actualOut?'Departed':'Expected']);});
+  return {cols:['Member ID','Name','Branch','Movement','Date / time','Status'],rows}}},
+ {id:'branch',name:'Branch-wise sewadar',uses:['range','state'],run(c){
+  return {cols:['Branch','State','Members','Requests','Approved','Arrived','Residing now'],rows:DB.branches.filter(b=>(!c.st||b.state===c.st)&&(CUR.role!=='coordinator'||b.id===CUR.branchId)).map(b=>{const R=regs().filter(r=>r.branchId===b.id&&inRng(c,r));return [b.name,b.state,DB.members.filter(m=>m.branchId===b.id).length,R.length,R.filter(r=>r.approvedFrom).length,R.filter(r=>r.actualIn).length,R.filter(r=>r.status==='Checked In').length]})}}},
+ {id:'state',name:'State-wise sewadar',uses:['range'],run(c){
+  const g={};DB.branches.forEach(b=>{g[b.state]=g[b.state]||{b:0,m:0,r:0,a:0,n:0};g[b.state].b++;g[b.state].m+=DB.members.filter(m=>m.branchId===b.id).length});
+  regs().filter(r=>inRng(c,r)).forEach(r=>{const s=g[branch(r.branchId).state];s.r++;if(r.actualIn)s.a++;if(r.status==='Checked In')s.n++});
+  return {cols:['State','Branches','Members','Requests','Arrived','Residing now'],rows:Object.keys(g).sort().map(k=>[k,g[k].b,g[k].m,g[k].r,g[k].a,g[k].n])}}},
+ {id:'dept',name:'Department-wise allocation & attendance',uses:['range','dept','q'],run(c){
+  const from=c.from||addDays(today(),-6),to=c.to||today();const rows=[];
+  DB.duties.filter(d=>scopeReg(reg(d.regId))&&(!c.dp||d.deptId===c.dp)&&overlaps(d.from,d.to,from,to)&&(!c.q||mName(d.memberId).toLowerCase().includes(c.q))).sort((a,b)=>dept(a.deptId).name.localeCompare(dept(b.deptId).name)).forEach(d=>{
+   const n={Present:0,Absent:0,Leave:0};Object.keys(DB.att).forEach(k=>{const [dt,rid]=k.split('|');if(rid===d.regId&&dt>=from&&dt<=to&&dt>=d.from&&dt<=d.to&&DB.att[k].deptId===d.deptId)n[DB.att[k].status]++});
+   rows.push([dept(d.deptId).name,mName(d.memberId),d.shift,fd(d.from)+' – '+fd(d.to),d.status,n.Present,n.Absent,n.Leave])});
+  return {cols:['Department','Member','Shift','Duty period','Status','Present','Absent','Leave'],rows,note:`Attendance counted ${fd(from)} – ${fd(to)}`}}},
+ {id:'occ',name:'Accommodation occupancy',uses:[],run(){
+  const st=bedStates();return {cols:['Site','Building','Floor','Room','Beds','Occupied','Reserved','Cleaning','Vacant'],rows:DB.rooms.map(rm=>{const bl=bldg(rm.buildingId),bs=DB.beds.filter(b=>b.roomId===rm.id),n=k=>bs.filter(b=>st.get(b.id).status===k).length;return [site(bl.siteId).name,bl.name,rm.floor,rm.name,bs.length,n('Occupied'),n('Reserved'),n('Cleaning'),n('Available')]})}}},
+ {id:'vacant',name:'Vacant beds',uses:[],run(){
+  const st=bedStates();return {cols:['Site','Building','Floor','Room','Intended for','Bed'],rows:DB.beds.filter(b=>st.get(b.id).status==='Available').map(b=>{const rm=room(b.roomId),bl=bldg(rm.buildingId);return [site(bl.siteId).name,bl.name,rm.floor,rm.name,rm.gender,b.label]})}}},
+ {id:'pending',name:'Pending approvals',uses:['branch','q'],run(c){
+  return {cols:['Request','Member','Branch','Requested stay','Type','Source','Status'],rows:rRegs(Object.assign({},c,{from:'',to:''})).filter(r=>r.status==='Submitted').map(r=>[r.id,mName(r.memberId),branch(r.branchId).name,fd(r.arrival)+' – '+fd(r.departure),r.type,r.source,r.status])}}},
+ {id:'overdue',name:'Overdue stays & extension requests',uses:['branch'],run(c){
+  const t=today(),rows=[];regs().filter(r=>(!c.br||r.branchId===c.br)).forEach(r=>{
+   if(r.status==='Checked In'&&stayEnd(r)<t)rows.push([r.memberId,mName(r.memberId),branch(r.branchId).name,'Overdue stay',fd(stayEnd(r)),(-diffDays(t,stayEnd(r)))+' day(s) overdue','Overdue']);
+   const e=pendingExt(r);if(e)rows.push([r.memberId,mName(r.memberId),branch(r.branchId).name,'Extension request',fd(e.to),e.reason,'Pending'])});
+  return {cols:['Member ID','Name','Branch','Item','Date','Detail','Status'],rows}}},
+ {id:'history',name:'Member visit & stay history',uses:['range','branch','state','q'],run(c){
+  return {cols:['Member ID','Name','Request','Stay','Type','Arrived','Departed','Bed','Department','Status'],rows:rRegs(c).filter(r=>r.status!=='Draft').sort((a,b)=>b.memberId.localeCompare(a.memberId)||stayStart(b).localeCompare(stayStart(a))).map(r=>{const al=DB.allocs.filter(a=>a.regId===r.id).pop(),du=DB.duties.filter(x=>x.regId===r.id).pop();return [r.memberId,mName(r.memberId),r.id,fd(stayStart(r))+' – '+fd(stayEnd(r)),stayType(r),fdt(r.actualIn),fdt(r.actualOut),al?allocBedText(al):'',du?dept(du.deptId).name:'',r.status]})}}},
+ {id:'lt',name:'Monthly & long-term sewadar',uses:['branch','q'],run(c){
+  return {cols:['Member ID','Name','Branch','Type','Approved stay','Days left','Bed','Department','Status'],rows:rRegs(Object.assign({},c,{from:'',to:''})).filter(r=>['Monthly','Long-Term'].includes(stayType(r))&&['Approved','Checked In','Checked Out'].includes(r.status)).map(r=>{const a=activeAlloc(r.id);return [r.memberId,mName(r.memberId),branch(r.branchId).name,stayType(r),fd(stayStart(r))+' – '+fd(stayEnd(r)),r.status==='Checked Out'?'—':diffDays(today(),stayEnd(r)),a?bedShort(bedO(a.bedId)):'',deptOf(r),r.status]})}}}
+];
+PAGES.reports={render(){
+ const id=UI.f['rp.id']||'resident',rep=REPORTS.find(r=>r.id===id)||REPORTS[0],u=rep.uses;
+ return pageHead('Reports','Filter by date, branch, state or department, then export.',`<button class="btn" data-act="exp" data-id="csv">Export CSV</button><button class="btn" data-act="exp" data-id="xls">Export Excel</button><button class="btn" onclick="window.print()">Print</button>`)+
+ `<div class="card"><div class="filters">${fs('rp.id',REPORTS.map(r=>({v:r.id,l:r.name})),null,1)}
+  ${u.includes('range')?`<label class="muted">Stay from <input type="date" class="in" data-f="rp.from" value="${UI.f['rp.from']||''}"></label><label class="muted">to <input type="date" class="in" data-f="rp.to" value="${UI.f['rp.to']||''}"></label>`:''}
+  ${u.includes('day')?`<label class="muted">Day <input type="date" class="in" data-f="rp.day" value="${UI.f['rp.day']||today()}"></label>`:''}
+  ${u.includes('branch')&&CUR.role!=='coordinator'?fs('rp.br',branchOpts(),'All branches'):''}${u.includes('state')?fs('rp.st',STATES,'All states'):''}${u.includes('dept')?fs('rp.dp',deptOpts().filter(o=>CUR.role!=='supervisor'||o.v===CUR.deptId),'All departments'):''}${u.includes('q')?fi('rp.q','Search name / ID…'):''}</div>
+  <div id="tbl">${this.table()}</div></div>`;
+},table(){
+ const id=UI.f['rp.id']||'resident',rep=REPORTS.find(r=>r.id===id)||REPORTS[0],out=rep.run(rctx());
+ return `<div class="muted" style="margin-bottom:8px">${out.rows.length} row(s)${out.note?' · '+esc(out.note):''}</div>`+(out.rows.length?`<div class="tw"><table><thead><tr>${out.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${out.rows.map(r=>`<tr>${r.map((v,i)=>`<td>${out.cols[i]==='Status'&&BADGE[v]?badge(v):esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">No rows for these filters.</div>');
+}};
+function exportRep(kind){
+ const id=UI.f['rp.id']||'resident',rep=REPORTS.find(r=>r.id===id)||REPORTS[0],out=rep.run(rctx()),name=`noormahal_${rep.id}_${today()}`;
+ let blob;
+ if(kind==='csv'){const q=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;blob=new Blob(['\ufeff'+[out.cols].concat(out.rows).map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'})}
+ else blob=new Blob([`<html><head><meta charset="utf-8"></head><body><table border="1"><tr>${out.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>${out.rows.map(r=>`<tr>${r.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</table></body></html>`],{type:'application/vnd.ms-excel'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+(kind==='csv'?'.csv':'.xls');document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ===== Admin & Prototype ===== */
+PAGES.admin={render(){
+ const tab=curTab('admin','d');
+ const fn=({d:()=>this.data(),u:()=>this.users(),r:()=>this.roles(),l:()=>this.lists(),a:()=>this.audit()})[tab]||(()=>this.data());
+ return pageHead('Admin & Prototype Controls','Super Admin only (demo). Manage users, access, option lists and data.')+
+ `<div class="alert bad"><span><b>This is a browser-only prototype.</b> Data is stored in this browser's localStorage and the role switch is a demonstration. It provides no real authentication, authorisation or data protection and must not hold live sewadar records. Production needs a backend API and PostgreSQL.</span></div>
+ <div class="card">${tabsHtml('admin',[['d','Data'],['u','Users',DB.users.length],['r','Roles & access'],['l','Lists & options'],['a','Audit log']])}${fn()}</div>`;
+},
+data(){
+ const n=(l,v)=>`<div><span>${l}</span>${v}</div>`;
+ return `<div class="grid g2"><div><h3>Prototype data</h3><div class="kv">${n('Members',DB.members.length)}${n('Requests',DB.regs.length)}${n('Branches',DB.branches.length)}${n('Departments',DB.depts.length)}${n('Beds',DB.beds.length)}${n('Allocations',DB.allocs.length)}${n('Duties',DB.duties.length)}${n('Attendance marks',Object.keys(DB.att).length)}</div>
+  <div class="acts"><button class="btn" data-act="admExport">Download JSON backup</button><button class="btn" data-act="admImport">Import JSON</button></div><input type="file" id="impFile" accept="application/json" hidden></div>
+  <div><h3>Start fresh / reset</h3><p class="muted" style="margin-top:0">Remove the sample records and enter your own by hand — everything can also be added, edited and deleted one by one in its own page.</p>
+  <div class="acts"><button class="btn dng" data-act="admClearPeople">Delete all members &amp; visits</button><button class="btn dng" data-act="admClearAll">Delete everything (empty system)</button><button class="btn dng" data-act="admReset">Reset to sample data</button></div></div></div>
+  <p class="muted">All reads and writes go through one Store layer, so an API can replace localStorage later. Planned tables: branches · members · registrations · allocations · duties · attendance · sites / buildings / rooms / beds · departments · users &amp; roles · audit log.</p>`;
+},
+users(){
+ return `<div class="acts" style="margin-bottom:10px">${pbtn('+ Add user','userAdd')}</div>`+tbl([['Name',u=>`<b>${esc(u.name)}</b>${u.id===CUR.id?' <span class="chip">you</span>':''}`],['Role',u=>esc((ROLES[u.role]||{}).label||u.role)],
+  ['Scope',u=>u.role==='coordinator'?esc((branch(u.branchId)||{}).name||'— no branch set —'):u.role==='supervisor'?esc((dept(u.deptId)||{}).name||'— no department set —'):'All records'],['',u=>btn('Edit','userEdit',u.id)+btn('Delete','userDelete',u.id,'dng')]],DB.users)+
+  '<p class="muted">These are demo sign-in profiles (no passwords). In production, users and passwords live on the server.</p>';
+},
+roles(){
+ const pages=NAV.filter(n=>n[0]!=='admin'),roles=Object.keys(ROLES).filter(r=>r!=='superadmin');
+ return `<p class="muted" style="margin-top:0">Choose what each role can open. <b>View</b> = see only; <b>Edit</b> = add, change and delete. Branch coordinators still see only their own branch and department supervisors only their own department. Super Admin always has full access. (Prototype only — not real security.)</p>
+ <div class="tw"><table><thead><tr><th>Page</th>${roles.map(r=>`<th>${esc(ROLES[r].label)}</th>`).join('')}</tr></thead><tbody>${pages.map(p=>`<tr><td><b>${esc(p[1])}</b></td>${roles.map(r=>{const v=ROLES[r].pages[p[0]]||'',lock=p[0]==='dashboard';
+  return `<td><select class="in" data-perm="${r}|${p[0]}"${lock?' disabled':''}>${optHtml([{v:'',l:'—'},{v:'v',l:'View'},{v:'e',l:'Edit'}].filter(o=>!lock||o.v),v)}</select></td>`}).join('')}</tr>`).join('')}</tbody></table></div>
+ <div class="acts" style="margin-top:12px"><button class="btn" data-act="permReset">Reset to defaults</button></div>`;
+},
+lists(){
+ const chip=(k,v,label)=>`<span class="chip">${label}<button data-act="listDel" data-id="${k}|${encodeURIComponent(v)}" title="Remove" aria-label="Remove ${esc(v)}">×</button></span>`;
+ const card=(title,k,html,hint)=>`<div class="card" style="margin:0"><h3>${title}</h3><p class="muted" style="margin-top:-6px">${hint}</p><div class="chips" style="margin-bottom:10px">${html}</div><button class="btn sm pri" data-act="listAdd" data-id="${k}">+ Add</button></div>`;
+ return `<div class="grid g2">${card('States / regions','states',DB.lists.states.map(x=>chip('states',x,esc(x))).join(''),'Used in branch, member and report filters.')}
+  ${card('Emergency-contact relations','rels',DB.lists.rels.map(x=>chip('rels',x,esc(x))).join(''),'Choices for a member’s emergency contact.')}
+  ${card('Duty shifts','shifts',DB.lists.shifts.map(x=>`<span class="chip">${esc(x.name)} <small>${esc(x.time||'')}</small><button data-act="shiftEdit" data-id="${encodeURIComponent(x.name)}" title="Edit timing" aria-label="Edit ${esc(x.name)}">✎</button><button data-act="listDel" data-id="shifts|${encodeURIComponent(x.name)}" title="Remove" aria-label="Remove ${esc(x.name)}">×</button></span>`).join(''),'Shifts offered when assigning sewa.')}</div>
+  <p class="muted">Member types (Short-Term, Monthly, Long-Term) are fixed because the stay-expiry alerts and monthly/long-term screens depend on them. Departments, branches and buildings are managed on their own pages.</p>`;
+},
+audit(){return `<h3>Audit log (latest 60)</h3>`+tbl([['When',l=>fdt(l.at)],['By',l=>esc(l.by)],['Action',l=>esc(l.text)]],DB.log.slice(0,60))}};
+
+/* ---------- 8. Shell: nav, search, notifications, login ---------- */
+function notices(){
+ const t=today(),R=regs(),n=[];
+ const subs=R.filter(r=>r.status==='Submitted').length,ex=R.filter(r=>pendingExt(r)).length;
+ if(can('approvals')&&subs)n.push(['approvals',`${subs} registration(s) awaiting approval`]);
+ if(can('approvals')&&ex)n.push(['approvals',`${ex} extension request(s)`]);
+ const arr=R.filter(r=>r.status==='Approved'&&stayStart(r)<=t).length;if(can('reception')&&arr)n.push(['reception',`${arr} sewadar expected at reception`]);
+ const od=R.filter(r=>r.status==='Checked In'&&stayEnd(r)<t).length;if(can('longterm')&&od)n.push(['longterm',`${od} overdue stay(s)`]);
+ const soon=R.filter(r=>r.status==='Checked In'&&['Monthly','Long-Term'].includes(stayType(r))&&diffDays(t,stayEnd(r))>=0&&diffDays(t,stayEnd(r))<=7).length;if(can('longterm')&&soon)n.push(['longterm',`${soon} long-stay approval(s) expiring within 7 days`]);
+ const nb=R.filter(r=>['Approved','Checked In'].includes(r.status)&&!activeAlloc(r.id)).length;if(can('accommodation')&&nb)n.push(['accommodation',`${nb} member(s) need a bed`]);
+ const cl=DB.beds.filter(b=>b.cleaning).length;if(can('accommodation')&&cl)n.push(['accommodation',`${cl} bed(s) pending cleaning`]);
+ return n;
+}
+function chrome(){
+ const badgeN={approvals:regs().filter(r=>r.status==='Submitted'||pendingExt(r)).length};
+ $('#nav').innerHTML=NAV.filter(n=>can(n[0])).map(n=>`<button class="nav${UI.page===n[0]?' on':''}" data-act="go" data-id="${n[0]}"><svg class="ic" viewBox="0 0 24 24"><path d="${n[2]}"/></svg>${n[1]}${badgeN[n[0]]?`<span class="cnt">${badgeN[n[0]]}</span>`:''}</button>`).join('');
+ const nn=notices();$('#bellN').textContent=nn.length;$('#bellN').hidden=!nn.length;
+ $('#pName').textContent=CUR.name;$('#pRole').textContent=ROLES[CUR.role].label;$('#pAv').textContent=CUR.name[0];
+}
+function render(){
+ if(!CUR)return;
+ if(!can(UI.page))UI.page=(NAV.find(n=>can(n[0]))||['dashboard'])[0];
+ if(!can(UI.page)){$('#main').innerHTML='<div class="card empty">This role has no pages enabled. Ask the Super Admin to grant access (Admin → Roles &amp; access).</div>';chrome();return}
+ const p=PAGES[UI.page];$('#main').innerHTML=p.render();chrome();
+}
+function go(page){if(!can(page))return;UI.page=page;location.hash='#/'+page;$('#side').classList.remove('open');closeMenus();render();window.scrollTo(0,0)}
+function closeMenus(){['gsdd','bellDD','profDD'].forEach(i=>$('#'+i).hidden=true)}
+function setUser(id){
+ const u=DB.users.find(x=>x.id===id);if(!u)return;
+ CUR=Object.assign({},u);
+ try{localStorage.setItem(UKEY,id)}catch(e){}
+ closeModal();closeMenus();
+ $('#login').hidden=true;$('#app').hidden=false;UI.f={};UI.tab={};
+ const h=(location.hash||'').replace('#/','');UI.page=PAGES[h]&&can(h)?h:'dashboard';render();
+}
+function showLogin(){
+ CUR=null;try{localStorage.removeItem(UKEY)}catch(e){}$('#app').hidden=true;$('#login').hidden=false;
+ $('#login').innerHTML=`<div class="lg"><h1>DJJS Noormahal</h1><p style="margin:2px 0 0"><b>Sewadar &amp; Accommodation Management System</b></p><div class="alert bad" style="margin-top:14px"><span><b>Prototype — sample login.</b> No passwords. Roles are simulated in your browser and are <b>not secure</b>. Data is sample data stored in this browser only.</span></div>
+ <p class="muted" style="margin-bottom:0">Choose a role to explore:</p><div class="ucards">${DB.users.map(u=>`<button class="ucard" data-act="login" data-id="${u.id}"><b>${esc(u.name)}</b><small>${esc(ROLES[u.role].label)}</small></button>`).join('')}</div></div>`;
+}
+
+/* ---------- 9. Actions (event delegation) ---------- */
+const ACT={
+ go:d=>go(d.id),closeModal,toggleSide:()=>$('#side').classList.toggle('open'),
+ login:d=>setUser(d.id),
+ tab:d=>{UI.tab[d.id]=d.x;render()},
+ bell:()=>{const dd=$('#bellDD'),open=dd.hidden;closeMenus();if(open){const n=notices();dd.innerHTML=n.length?n.map(x=>`<button class="it" data-act="go" data-id="${x[0]}">${esc(x[1])}</button>`).join(''):'<div class="empty">All clear.</div>';dd.hidden=false}},
+ profile:()=>{const dd=$('#profDD'),open=dd.hidden;closeMenus();if(open){dd.innerHTML=`<div style="padding:12px"><small>Switch demo user</small><select class="in" id="swUser" style="width:100%;margin:6px 0 10px">${DB.users.map(u=>`<option value="${u.id}"${u.id===CUR.id?' selected':''}>${esc(u.name)}</option>`).join('')}</select><button class="btn" data-act="logout" style="width:100%">Sign out</button></div>`;dd.hidden=false;$('#swUser').onchange=e=>{setUser(e.target.value);closeMenus()}}},
+ logout:showLogin,
+ searchPick:d=>{closeMenus();$('#gs').value='';memberView(d.id)},
+ memberAdd:()=>memberForm(null),memberEdit:d=>memberForm(d.id),memberView:d=>memberView(d.id),
+ branchAdd:()=>branchForm(null),branchEdit:d=>branchForm(d.id),branchView:d=>branchView(d.id),
+ regNew:d=>regForm(null,d.id||null,false),regNewLT:()=>regForm(null,null,false,'Monthly'),regEdit:d=>regForm(d.id),regView:d=>viewReg(d.id),
+ regSubmit:d=>{const r=reg(d.id);const c=memberClash(r.memberId,r.arrival,r.departure,r.id);if(c)return toast(`Overlaps with ${c.id} (${c.status}) for this member.`,'bad');r.status='Submitted';hist(r,'Submitted for approval');log(`${r.id} submitted`);commit();toast('Submitted for approval','ok')},
+ regDelete:d=>{const r=reg(d.id);if(!r)return;
+  if(!['Draft','Rejected','Cancelled'].includes(r.status)&&!['superadmin','manager'].includes(CUR.role))return toast('Only the Super Admin or Sewadar Manager can delete a processed request.','bad');
+  confirmBox('Delete request',`Permanently delete <b>${esc(r.id)}</b> (${esc(mName(r.memberId))}) together with its bed and sewa records? This cannot be undone.`,'Delete',()=>{const e=deleteReg(r.id);if(e)return toast(e,'bad');commit();toast('Request deleted','ok')},true)},
+ regWithdraw:d=>{const r=reg(d.id);r.status='Draft';hist(r,'Withdrawn back to draft for correction');log(r.id+' withdrawn');commit();toast('Moved back to Draft — you can edit it now','ok')},
+ regCancel:d=>{const r=reg(d.id);formModal({title:`Cancel ${esc(r.id)} — ${esc(mName(r.memberId))}`,pre:`<div class="note">The request will be marked <b>Cancelled</b>${activeAlloc(r.id)?' and the reserved bed will be released':''}.</div>`,fields:[{n:'why',l:'Reason (optional)',t:'textarea',full:1}],buttons:[{label:'Cancel request',cls:'bad',run(v){const e=cancelReg(r.id,v.why);if(e)return e;Store.save();closeModal();render();toast('Request cancelled','ok');return null}}]})},
+ apRevert:d=>confirmBox('Revert approval','Send this request back to <b>Pending approval</b>? Any reserved bed and planned sewa will be released.','Revert',()=>{const e=revertApproval(d.id);if(e)return toast(e,'bad');commit();toast('Back in pending approvals','ok')}),
+ apReconsider:d=>{const r=reg(d.id);r.status='Submitted';hist(r,'Rejection reconsidered — back to pending');log(r.id+' reconsidered');commit();toast('Back in pending approvals','ok')},
+ rcUndoIn:d=>{const r=reg(d.id);confirmBox('Undo check-in',`Mark <b>${esc(mName(r.memberId))}</b> as <b>not yet arrived</b> again? A bed already allocated stays reserved.`,'Undo check-in',()=>{const e=undoCheckIn(d.id);if(e)return toast(e,'bad');commit();toast('Check-in undone','ok')})},
+ rcUndoOut:d=>{const r=reg(d.id);confirmBox('Undo check-out',`Put <b>${esc(mName(r.memberId))}</b> back as a current resident? Their bed and sewa are restored if the bed is still free.`,'Undo check-out',()=>{const e=undoCheckOut(d.id);if(e)return toast(e,'bad');commit();toast('Check-out undone','ok')})},
+ regReopen:d=>{const r=reg(d.id);r.status='Draft';hist(r,'Re-opened as draft for correction');commit();toast('Moved back to Draft','ok')},
+ extReq:d=>extForm(d.id),
+ approveOpen:d=>approveForm(d.id),
+ extDecide:d=>{const r=reg(d.id),e=pendingExt(r);
+  if(d.x==='y'){const err=extendStay(r.id,e.to,e.reason);if(err)return toast(err,'bad');e.status='Approved'}else{e.status='Rejected';hist(r,'Extension request rejected')}
+  e.decidedBy=who();log(`Extension ${e.status}: ${mName(r.memberId)}`);commit();toast('Extension '+e.status.toLowerCase(),'ok')},
+ rcArrive:d=>{const r=reg(d.id);dtForm(`Confirm arrival — ${esc(mName(r.memberId))}`,`Approved stay ${fd(stayStart(r))} – ${fd(stayEnd(r))}. Next steps: assign sewa department and a bed.`,'Confirm arrival',nowLocal(),dt=>{const e=doCheckIn(d.id,dt);if(e)return e;Store.save();closeModal();render();toast('Arrival recorded — assign department and bed next','ok');return null})},
+ rcOut:d=>{const r=reg(d.id),a=activeAlloc(r.id);dtForm(`Check out — ${esc(mName(r.memberId))}`,a?`Bed ${esc(bedShort(bedO(a.bedId)))} will be marked for cleaning and the active sewa duty will end.`:'Active sewa duty will end.','Check out',nowLocal(),dt=>{const e=doCheckOut(d.id,dt);if(e)return e;Store.save();closeModal();render();toast('Checked out','ok');return null})},
+ walkin:d=>regForm(null,d.id||null,true),
+ newMemberFromReg:(d,el,e)=>{e.preventDefault();const walk=$('#mdlWalk');memberForm(null,m=>regForm(null,m.id,false))},
+ bedOpen:d=>bedDetail(d.id),bedAssign:d=>bedModal(d.id,null,'assign'),bedTransfer:d=>bedModal(d.id,null,'transfer'),
+ bedExtend:d=>{const r=reg(d.id);formModal({title:`Extend stay — ${esc(mName(r.memberId))}`,pre:`<div class="note">Current end date: <b>${fd(stayEnd(r))}</b>. The bed allocation and active duty are extended too, if the bed is free.</div>`,fields:[{n:'to',l:'New end date',t:'date',req:1},{n:'note',l:'Reason',req:1}],buttons:[{label:'Extend',run(v){const e=extendStay(d.id,v.to,v.note);if(e)return e;Store.save();closeModal();render();toast('Stay extended','ok');return null}}]})},
+ bedRelease:d=>{const r=reg(d.id),a=activeAlloc(d.id);if(!a)return toast('This member has no bed assigned.','bad');const inn=r.status==='Checked In';
+  confirmBox(inn?'Unassign bed':'Release reservation',inn?`Take <b>${esc(mName(r.memberId))}</b> out of <b>${esc(bedShort(bedO(a.bedId)))}</b>? They stay checked in but without a bed — assign another bed afterwards. If the bed was actually used, mark it for cleaning from the bed board.`:'Release this bed reservation? The member stays approved and will be waiting for a bed.',inn?'Unassign':'Release',()=>{
+   a.active=false;a.endedOn=today();a.endReason=inn?'Bed unassigned':'Reservation released';hist(r,inn?`Bed unassigned: ${allocBedText(a)}`:'Bed reservation released');log(`${inn?'Bed unassigned':'Reservation released'}: ${mName(r.memberId)}`);commit();toast(inn?'Bed unassigned':'Reservation released','ok')})},
+ bedClean:d=>{bedO(d.id).cleaning=false;log('Bed cleaned: '+bedShort(bedO(d.id)));closeModal();commit();toast('Bed is available again','ok')},
+ stAdd:d=>structAdd(...sidParts(d.id)),stEdit:d=>structEdit(...sidParts(d.id)),stDel:d=>structDelete(...sidParts(d.id)),
+ tgl:d=>{const c=UI.closed||(UI.closed={});c[d.id]=!c[d.id];render()},
+ deptAdd:()=>deptForm(null),deptEdit:d=>deptForm(d.id),dutyAssign:d=>dutyForm(d.id,false),dutyChange:d=>dutyForm(d.id,true),
+ dutyEnd:d=>confirmBox('End duty','End this sewa assignment today? It stays in history.','End duty',()=>{const du=activeDuty(d.id);du.status='Ended';du.endedOn=today();if(du.to>today())du.to=today();hist(reg(d.id),'Duty ended: '+dept(du.deptId).name);commit()}),
+ attAll:()=>{const date=UI.f['at.date']||today();DB.duties.filter(x=>x.from<=date&&date<=x.to&&canDept(x.deptId)&&scopeReg(reg(x.regId))&&onSite(reg(x.regId),date)&&(!UI.f['at.dp']||x.deptId===UI.f['at.dp'])).forEach(x=>{if(attStatus(date,x.regId)==='Not Marked')setAtt(date,x.regId,'Present')});log('Bulk attendance for '+date);commit();toast('Unmarked members set to Present','ok')},
+ memberDelete:d=>{const m=member(d.id);if(!m)return;
+  const rs=DB.regs.filter(r=>r.memberId===m.id),live=rs.find(r=>['Submitted','Approved','Checked In'].includes(r.status)),close='<button class="btn" data-act="closeModal">Close</button>';
+  if(live)return modal({title:'Cannot delete member',body:`<p><b>${esc(m.name)}</b> has a live request (${esc(live.id)} — ${esc(live.status)}). Reject or cancel it, or check the member out, first.</p>`,footer:close});
+  if(rs.length&&!['superadmin','manager'].includes(CUR.role))return modal({title:'Cannot delete member',body:`<p><b>${esc(m.name)}</b> has ${rs.length} past visit record(s). Only the Super Admin or Sewadar Manager can delete a member together with their history.</p>`,footer:close});
+  confirmBox('Delete member',`Permanently delete <b>${esc(m.name)}</b> (${esc(m.id)})?${rs.length?` Their ${rs.length} visit record(s) and all bed and sewa history are deleted too.`:''} This cannot be undone.`,'Delete member',()=>{const e=deleteMember(m.id);if(e)return toast(e,'bad');commit();toast('Member deleted','ok')},true)},
+ branchDelete:d=>{const b=branch(d.id);if(!b)return;
+  const ms=DB.members.filter(m=>m.branchId===b.id).length,rs=DB.regs.filter(r=>r.branchId===b.id).length,us=DB.users.filter(u=>u.branchId===b.id).length;
+  if(!ms&&!rs&&!us)return confirmBox('Delete branch',`Delete <b>${esc(b.name)}</b>? It has no members or requests.`,'Delete',()=>{deleteBranch(b.id,'');commit();toast('Branch deleted','ok')},true);
+  formModal({title:`Delete branch — ${esc(b.name)}`,pre:`<div class="note">This branch has <b>${ms}</b> member(s), <b>${rs}</b> request(s) and <b>${us}</b> linked user(s). Choose a branch to move them to; then this branch is deleted.</div>`,fields:[{n:'to',l:'Move everything to',t:'select',opts:DB.branches.filter(x=>x.id!==b.id).map(x=>({v:x.id,l:`${x.name} (${x.state})`})),req:1,ph:'Select branch'}],
+   buttons:[{label:'Move & delete branch',cls:'bad',run(v){const e=deleteBranch(b.id,v.to);if(e)return e;Store.save();closeModal();render();toast('Branch deleted; records moved','ok');return null}}]})},
+ deptDelete:d=>{const x=dept(d.id);if(!x)return;const act=DB.duties.filter(u=>u.deptId===x.id&&u.status==='Active').length,past=DB.duties.filter(u=>u.deptId===x.id).length-act;
+  if(act)return modal({title:'Cannot delete department',body:`<p><b>${act}</b> sewadar are currently assigned to <b>${esc(x.name)}</b>. Change or end those duties first — or edit the department and set it to <b>inactive</b> instead.</p>`,footer:'<button class="btn" data-act="closeModal">Close</button>'});
+  confirmBox('Delete department',`Delete <b>${esc(x.name)}</b>?${past?` ${past} past duty record(s) keep the department name in their history.`:''}`,'Delete',()=>{const e=deleteDept(x.id);if(e)return toast(e,'bad');commit();toast('Department deleted','ok')},true)},
+ dutyDelete:d=>{const x=byId(DB.duties,d.id);if(!x)return;confirmBox('Delete duty record',`Delete this duty record (${esc(mName(x.memberId))} — ${esc((dept(x.deptId)||{}).name||'?')}, ${fd(x.from)} – ${fd(x.to)})? Attendance already marked is kept.`,'Delete',()=>{DB.duties=DB.duties.filter(u=>u.id!==x.id);log('Deleted duty record '+x.id);commit();toast('Duty record deleted','ok')},true)},
+ bedDirty:d=>{const b=bedO(d.id);if(!b||bedStates().get(b.id).status!=='Available')return toast('Only a free bed can be marked for cleaning.','bad');b.cleaning=true;log('Bed marked for cleaning: '+bedShort(b));closeModal();commit();toast('Bed marked for cleaning','ok')},
+ userAdd:()=>userForm(null),userEdit:d=>userForm(d.id),
+ userDelete:d=>{const u=DB.users.find(x=>x.id===d.id);if(!u)return;if(u.id===CUR.id)return toast('You cannot delete the user you are signed in as.','bad');
+  if(u.role==='superadmin'&&DB.users.filter(x=>x.role==='superadmin').length<=1)return toast('Keep at least one Super Admin.','bad');
+  confirmBox('Delete user',`Delete <b>${esc(u.name)}</b>?`,'Delete',()=>{DB.users=DB.users.filter(x=>x.id!==u.id);commit();toast('User deleted','ok')},true)},
+ listAdd:d=>{const k=d.id;
+  formModal({title:k==='shifts'?'Add shift':k==='states'?'Add state / region':'Add relation',fields:k==='shifts'?[{n:'name',l:'Shift name',req:1},{n:'time',l:'Timing (optional)',ph:'e.g. 06:00–14:00'}]:[{n:'name',l:'Name',req:1}],
+   buttons:[{label:'Add',run(v){const L=DB.lists[k];if(L.some(x=>sameName(k==='shifts'?x.name:x,v.name)))return 'This entry already exists.';
+    L.push(k==='shifts'?{name:v.name,time:v.time||''}:v.name);applyLookups();Store.save();closeModal();render();toast('Added','ok');return null}}]})},
+ listDel:d=>{const [k,enc]=d.id.split('|'),v=decodeURIComponent(enc);let used=0,what='';
+  if(k==='states'){used=DB.branches.filter(b=>b.state===v).length+DB.members.filter(m=>m.state===v).length;what='branches and members use the state'}
+  if(k==='rels'){used=DB.members.filter(m=>m.emRel===v).length;what='members use the relation'}
+  if(k==='shifts'){used=DB.duties.filter(x=>x.status==='Active'&&x.shift===v).length;what='active duties use the shift'}
+  if(used)return modal({title:'Cannot remove',body:`<p><b>${used}</b> ${what} <b>${esc(v)}</b>. Change those first.</p>`,footer:'<button class="btn" data-act="closeModal">Close</button>'});
+  if(DB.lists[k].length<=1)return toast('Keep at least one entry in the list.','bad');
+  confirmBox('Remove from list',`Remove <b>${esc(v)}</b>?`,'Remove',()=>{DB.lists[k]=DB.lists[k].filter(x=>(k==='shifts'?x.name:x)!==v);applyLookups();commit();toast('Removed','ok')},true)},
+ shiftEdit:d=>{const x=DB.lists.shifts.find(y=>y.name===decodeURIComponent(d.id));if(!x)return;formModal({title:`Edit shift — ${esc(x.name)}`,values:{time:x.time||''},fields:[{n:'time',l:'Timing',ph:'e.g. 05:00–13:00'}],buttons:[{label:'Save',run(v){x.time=v.time;applyLookups();Store.save();closeModal();render();toast('Shift updated','ok');return null}}]})},
+ permReset:()=>confirmBox('Reset access','Restore every role to its default page access?','Reset',()=>{DB.perms=null;applyPerms();commit();toast('Access reset to defaults','ok')}),
+ admClearPeople:()=>confirmBox('Delete all members & visits',`Delete <b>all ${DB.members.length} members</b>, ${DB.regs.length} requests, bed allocations, sewa duties and attendance? Branches, departments, buildings, rooms, beds, users and settings are kept.`,'Delete people & visits',()=>{DB.members=[];DB.regs=[];DB.allocs=[];DB.duties=[];DB.att={};DB.beds.forEach(b=>b.cleaning=false);log('Cleared all members and visits');commit();toast('All members and visits deleted','ok')},true),
+ admClearAll:()=>confirmBox('Delete everything','Empty the whole system — members, visits, branches, departments and every site, building, room and bed? Users, access settings and option lists are kept. You can then add your own data by hand.','Delete everything',()=>{DB.members=[];DB.regs=[];DB.allocs=[];DB.duties=[];DB.att={};DB.branches=[];DB.depts=[];DB.sites=[];DB.buildings=[];DB.rooms=[];DB.beds=[];DB.tomb={};DB.users.forEach(u=>{u.branchId='';u.deptId=''});CUR=Object.assign({},DB.users.find(u=>u.id===CUR.id)||DB.users[0]);UI.f={};UI.closed={};log('Cleared everything');commit();toast('System emptied — start adding your own data','ok')},true),
+ exp:d=>exportRep(d.id),
+ admExport:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:'application/json'}));a.download='noormahal_prototype_backup_'+today()+'.json';a.click()},
+ admImport:()=>$('#impFile').click(),
+ admReset:()=>confirmBox('Reset data','Replace all data in this browser with fresh sample data? Your changes will be lost.','Reset',()=>{Store.reset();seed();const id=DB.users.find(u=>u.id===CUR.id)?CUR.id:'u1';setUser(id);toast('Sample data restored','ok')},true)
+};
+document.addEventListener('click',e=>{
+ const el=e.target.closest('[data-act]');
+ if(el){const f=ACT[el.dataset.act];if(f){f(el.dataset,el,e)}return}
+ if(e.target.id==='overlay')closeModal();
+ if(!e.target.closest('.dd,.iconbtn,.prof,.gsw'))closeMenus();
+});
+/* filter inputs: redraw only the table where possible so typing keeps focus */
+function onFilter(e){
+ const el=e.target;
+ if(el.dataset&&el.dataset.att){setAtt(UI.f['at.date']||today(),el.dataset.att,el.value);Store.save();toast('Attendance saved','ok');return}
+ if(!el.dataset||!el.dataset.f)return;
+ UI.f[el.dataset.f]=el.value;
+ if(el.dataset.f==='acc.site')UI.f['acc.bld']='';
+ const p=PAGES[UI.page];
+ if(el.dataset.full||!p.table||!$('#tbl')){const pos=el.selectionStart,id=el.dataset.f;render();const n=$(`[data-f="${id}"]`);if(n&&n.tagName==='INPUT'&&n.type!=='date'){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}}
+ else $('#tbl').innerHTML=p.table();
+}
+document.addEventListener('input',e=>{if(e.target.tagName==='INPUT'&&e.target.dataset.f)onFilter(e)});
+document.addEventListener('change',e=>{
+ if(e.target.id==='impFile'){const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d||d.v!==1||!Array.isArray(d.members)||!Array.isArray(d.regs)||!Array.isArray(d.beds)||!Array.isArray(d.branches))throw 0;DB=d;migrate();CUR=Object.assign({},DB.users.find(u=>CUR&&u.id===CUR.id)||DB.users[0]);Store.save();UI.f={};UI.closed={};render();toast('Backup imported','ok')}catch(x){toast('Not a valid backup file','bad')}};rd.readAsText(f);e.target.value='';return}
+ if(e.target.dataset&&e.target.dataset.perm){const [r,p]=e.target.dataset.perm.split('|');if(!DB.perms)DB.perms={};if(!DB.perms[r])DB.perms[r]=Object.assign({},ROLES[r].pages);DB.perms[r][p]=e.target.value;applyPerms();Store.save();toast('Access updated','ok');return}
+ if(e.target.tagName!=='INPUT'||e.target.type==='date')onFilter(e);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeMenus()}});
+/* global member search */
+$('#gs').addEventListener('input',e=>{
+ const q=e.target.value.trim().toLowerCase(),dd=$('#gsdd');if(q.length<2){dd.hidden=true;return}
+ const L=members().filter(m=>(m.id+m.name+m.mobile).toLowerCase().includes(q)).slice(0,8);
+ dd.innerHTML=L.length?L.map(m=>`<button class="it" data-act="searchPick" data-id="${m.id}">${avatar(m)}<span><b>${esc(m.name)}</b><br><small>${esc(m.id)} · ${esc(m.mobile)} · ${esc((branch(m.branchId)||{}).name)}</small></span></button>`).join(''):'<div class="empty">No matching member.</div>';dd.hidden=false;
+});
+window.addEventListener('hashchange',()=>{if(!CUR)return;const h=(location.hash||'').replace('#/','');if(PAGES[h]&&can(h)&&h!==UI.page){UI.page=h;render()}});
+
+/* ---------- 10. Boot ---------- */
+DB=Store.load();if(!DB)seed();else migrate();
+const saved=(()=>{try{return localStorage.getItem(UKEY)}catch(e){return null}})();
+if(saved&&DB.users.some(u=>u.id===saved))setUser(saved);else showLogin();
+window.__DJJS={get DB(){return DB},ACT,go,setUser,seed,migrate,undoCheckIn,undoCheckOut,cancelReg,revertApproval,deleteReg,deleteMember,deleteBranch,deleteDept,structPlan,structDelete,allocate,transferBed,extendStay,doCheckIn,doCheckOut,giveDuty,conflicts,bedStates,REPORTS,UI}; // debug hook for testing
+})();
+</script>
+</body>
+</html>
