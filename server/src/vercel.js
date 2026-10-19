@@ -26,7 +26,14 @@ function reason(e) {
   if (/ENOTFOUND|querySrv|ENODATA/i.test(m)) return 'The cluster address in MONGODB_URI was not found — copy it again from Atlas.';
   if (/Invalid scheme|Invalid connection string|URI must|Password contains|Username contains/i.test(m)) return 'MONGODB_URI is not a valid MongoDB address.';
   /* unknown cause: show the error itself, with any connection string (and so the password) removed */
-  return (e && e.name ? e.name + ': ' : '') + m.replace(/mongodb(\+srv)?:\/\/\S+/gi, '<MONGODB_URI>').slice(0, 300);
+  return (e && e.name ? e.name + ': ' : '') + m.replace(/mongodb(\+srv)?:\/\/\S+/gi, '<MONGODB_URI>').slice(0, 300) + ' — ' + shape(process.env.MONGODB_URI);
+}
+/** The shape of the connection string (never the user name or password), to spot a paste mistake. */
+function shape(u = '') {
+  const count = c => u.split(c).length - 1, at = u.lastIndexOf('@');
+  const odd = [...u].filter(c => c < ' ' || c > '~').map(c => 'U+' + c.codePointAt(0).toString(16).toUpperCase());
+  return `MONGODB_URI: ${u.length} chars, starts "${u.slice(0, 14)}", @×${count('@')}, :×${count(':')}, spaces×${count(' ')}, quotes×${count('"') + count("'")}, <>×${count('<') + count('>')}` +
+    `${odd.length ? ', hidden characters ' + [...new Set(odd)].join(' ') : ''}, after last @: "${at >= 0 ? u.slice(at + 1, at + 60) : ''}"`;
 }
 
 export default async function handler(req, res) {
