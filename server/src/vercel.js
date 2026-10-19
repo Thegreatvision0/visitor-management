@@ -25,7 +25,8 @@ function reason(e) {
   if (/whitelist|access list|timed out|Server selection/i.test(m)) return 'MongoDB Atlas did not answer — in Atlas → Network Access allow 0.0.0.0/0.';
   if (/ENOTFOUND|querySrv|ENODATA/i.test(m)) return 'The cluster address in MONGODB_URI was not found — copy it again from Atlas.';
   if (/Invalid scheme|Invalid connection string|URI must|Password contains|Username contains/i.test(m)) return 'MONGODB_URI is not a valid MongoDB address.';
-  return 'database or settings problem. See Vercel → Logs.';
+  /* unknown cause: show the error itself, with any connection string (and so the password) removed */
+  return (e && e.name ? e.name + ': ' : '') + m.replace(/mongodb(\+srv)?:\/\/\S+/gi, '<MONGODB_URI>').slice(0, 300);
 }
 
 export default async function handler(req, res) {
