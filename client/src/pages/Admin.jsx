@@ -4,7 +4,7 @@ import { PageHead, PBtn, Btn, Table, Tabs, useTab, Chip, FInput, FSelect } from 
 import { fdt } from '@shared/dates.js';
 import { VISIT_CAPS } from '@shared/constants.js';
 import { NAV } from '../components/Layout.jsx';
-import { userAdd, userEdit, userDelete, listAdd, listDel, shiftEdit, setPerm, permReset, admClearPeople, admClearAll, admReset, admExport, admImport, admImportBranches, admNormalize, stayRulesEdit, setVisitCap, visitCapsReset } from '../modals/admin.jsx';
+import { userAdd, userEdit, userDelete, listAdd, listDel, shiftEdit, setPerm, permReset, admClearPeople, admClearAll, admReset, admExport, admImport, admImportBranches, admNormalize, stayRulesEdit, setVisitCap, visitCapsReset, dataToolsSet } from '../modals/admin.jsx';
 import { EXTRA_PERMS } from '@shared/constants.js';
 
 export default function Admin() {
@@ -28,9 +28,12 @@ function DataTab() {
       <div className="acts"><button className="btn pri" onClick={() => admImportBranches(app)}>Load official DJJS branch list</button></div></div>
     <div><h3>Data clean-up</h3><p className="muted" style={{ marginTop: 0 }}>Fix spacing and capital letters in names already saved (e.g. "SukhwinderSingh" → "Sukhwinder Singh", "gurpreet  KAUR" → "Gurpreet Kaur"). Safe to run again.</p>
       <div className="acts"><button className="btn" onClick={() => admNormalize(app)}>Clean up names</button></div></div>
-    {app.feature('dangerZone') ? <div><h3>Start fresh / reset <span className="b bad">Danger zone</span></h3><p className="muted" style={{ marginTop: 0 }}>Remove the sample records and enter your own by hand — everything can also be added, edited and deleted one by one in its own page.</p>
-      <div className="acts"><button className="btn dng" onClick={() => admClearPeople(app)}>Delete all members &amp; visits</button><button className="btn dng" onClick={() => admClearAll(app)}>Delete everything (empty system)</button><button className="btn dng" onClick={() => admReset(app)}>Reset to sample data</button></div></div>
-      : <div><h3>Start fresh / reset</h3><p className="muted" style={{ marginTop: 0 }}>Deleting everything or resetting to sample data is switched off on the live system. Records can be archived one by one on their own pages. (Available in DEMO mode.)</p></div>}
+    {app.feature('dangerZone') || data.dataTools ? <div><h3>Start fresh / reset <span className="b bad">Danger zone</span></h3><p className="muted" style={{ marginTop: 0 }}>Remove the sample / test records before go-live and enter your own — everything can also be added, edited and archived one by one in its own page.</p>
+      <div className="acts"><button className="btn dng" onClick={() => admClearPeople(app)}>Delete all members &amp; visits</button><button className="btn dng" onClick={() => admClearAll(app)}>Delete everything (empty system)</button><button className="btn dng" onClick={() => admReset(app)}>Reset to sample data</button></div>
+      {app.feature('dangerZone') ? <p className="muted">Always available in DEMO mode.</p>
+        : <div className="note" style={{ marginTop: 10 }}><b>Go-live switch:</b> these buttons are <b>ON</b>. Switch them off when the real data starts.<div className="acts" style={{ marginTop: 6 }}><button className="btn" onClick={() => dataToolsSet(app, false)}>Switch off delete buttons (go live)</button></div></div>}</div>
+      : <div><h3>Start fresh / reset</h3><p className="muted" style={{ marginTop: 0 }}>Delete everything and reset to sample data are <b>switched off</b> (go-live). Records can be archived one by one on their own pages.</p>
+        <div className="acts"><button className="btn" onClick={() => dataToolsSet(app, true)}>Switch delete buttons back on…</button></div></div>}
   </div>;
 }
 

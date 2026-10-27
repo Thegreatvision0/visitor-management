@@ -75,7 +75,8 @@ const Settings = model('Settings', new Schema({
     stayRules: { shortMax: { type: Number, default: 10 }, monthlyMax: { type: Number, default: 30 } } }, // stay type from the number of days
   perms: { type: Schema.Types.Mixed, default: null },
   visitCaps: { type: Schema.Types.Mixed, default: null }, // guest visit permissions per role (null = defaults)
-  tomb: { type: Schema.Types.Mixed, default: {} }
+  tomb: { type: Schema.Types.Mixed, default: {} },
+  dataTools: { type: Boolean, default: null } // Admin → Data delete / reset buttons; null = on until switched off for go-live
 }, opts));
 
 const Counter = model('Counter', new Schema({ _id: S, seq: Number }, opts));

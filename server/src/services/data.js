@@ -1,7 +1,7 @@
 /* Whole-database operations: snapshot for the browser, backup export / import, sample reset, demo users. */
 import bcrypt from 'bcryptjs';
 import { DATA_MODELS, Attendance, AuditLog, Settings, User, Registration, Member, Allocation, Duty, Branch, Department } from '../models/index.js';
-import { getSettings, syncCounters, out, fail, getRev } from '../lib/core.js';
+import { getSettings, syncCounters, out, fail, getRev, dataToolsOn } from '../lib/core.js';
 import { defaultLists, resolveRoles, resolveVisitCaps, STATES_DEF, OFFICES_DEF, maskMobile } from '../../../shared/constants.js';
 import { scopeRegIds } from './domain.js';
 import { branchFamily, notificationsFor } from './notify.js';
@@ -45,6 +45,7 @@ export async function snapshot(user) {
     family, visits,
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/+$/, ''), // address guests use for registration links
     notifications, rev,
+    dataTools: user.role === 'superadmin' ? dataToolsOn(s) : undefined,
     demo: isDemo(), features: features() // DEMO ribbon and feature switches
   };
 }
@@ -84,7 +85,8 @@ export async function replaceAll(D) {
   /* lists: fill anything an older file lacks, and keep every state a branch uses */
   const lists = D.lists && D.lists.states ? D.lists : defaultLists();
   (D.branches || []).forEach(b => { if (b.state && !lists.states.includes(b.state)) lists.states.push(b.state); });
-  await Settings.replaceOne({ _id: 'app' }, { _id: 'app', lists, perms: D.perms || null, tomb: D.tomb || {} }, { upsert: true });
+  const keep = await Settings.findById('app').lean(); // the go-live switch is not part of the data
+  await Settings.replaceOne({ _id: 'app' }, { _id: 'app', lists, perms: D.perms || null, tomb: D.tomb || {}, dataTools: keep ? keep.dataTools : null }, { upsert: true });
   const brIds = new Set((D.branches || []).map(b => b.id)), dpIds = new Set((D.depts || []).map(x => x.id));
   for (const u of await User.find()) {
     let ch = false;

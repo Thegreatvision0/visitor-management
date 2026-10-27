@@ -25,7 +25,11 @@ try {
   ok((await call(null, 'GET', '/health')).data.db === 'up', '0 /api/health reports the database');
 
   /* 1.1 danger zone */
-  ok((await call(A, 'POST', '/admin/clear-all', { confirm: 'DELETE' })).status === 403, '1.1 "Delete everything" refused on a live system');
+  ok((await call(A, 'GET', '/snapshot')).data.dataTools === true, '1.1 delete buttons on until switched off for go-live');
+  ok((await call(A, 'PUT', '/admin/data-tools', { on: false })).status === 200 && (await call(A, 'GET', '/snapshot')).data.dataTools === false, '1.1 go-live switch turns them off');
+  ok((await call(A, 'POST', '/admin/clear-all', { confirm: 'DELETE' })).status === 403, '1.1 "Delete everything" refused after go-live');
+  ok((await call(A, 'PUT', '/admin/data-tools', { on: true })).status === 400, '1.1 switching back on needs DELETE typed');
+  ok((await call(A, 'GET', '/snapshot')).data.log.some(l => /switched OFF/.test(l.text)), '1.1 go-live switch written to the audit log');
   process.env.FEATURES = 'dangerZone=on';
   ok((await call(A, 'POST', '/admin/clear-people', {})).data.error === 'Type DELETE to confirm.', '1.1 with the switch on, DELETE must still be typed');
   delete process.env.FEATURES;
@@ -122,7 +126,11 @@ try {
   ok(!cut.length, '1.8 KPI labels not cut off on a small phone' + (cut.length ? ': ' + cut.join(', ') : ''));
   /* 1.1 UI */
   await P.goto(base + '/admin'); await P.waitForSelector('main .tabs');
-  ok((await P.textContent('main')).includes('switched off on the live system') && await P.locator('button:has-text("Delete everything")').count() === 0, '1.1 destructive buttons hidden on a live system');
+  ok((await P.textContent('main')).includes('switched off') && await P.locator('button:has-text("Delete everything")').count() === 0, '1.1 destructive buttons hidden after go-live');
+  await P.click('button:has-text("Switch delete buttons back on")'); await P.fill('#f-confirm', 'DELETE'); await P.click('.mdl button:has-text("Switch on")');
+  await P.waitForSelector('button:has-text("Delete everything")'); ok(true, '1.1 switched back on with DELETE: buttons shown');
+  await P.click('button:has-text("Switch off delete buttons")'); await P.click('.mdl button:has-text("Switch off")');
+  await P.waitForSelector('button:has-text("Switch delete buttons back on")'); ok(await P.locator('button:has-text("Delete everything")').count() === 0, '1.1 go-live button hides them again');
   await P.click('.tab:has-text("Roles & access")'); ok((await P.textContent('main table')).includes('See mobile numbers'), '1.9 "See mobile numbers" in Roles & access');
   await P.click('.tab:has-text("Lists & options")'); ok((await P.textContent('main')).includes('Stay types') && (await P.textContent('main')).includes('up to 10 days'), '1.5 stay-type limits shown in Lists & options');
   /* 1.5 override flagged in review */

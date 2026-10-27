@@ -71,7 +71,16 @@ export function shiftEdit(app, name) {
 export const setPerm = (app, role, page, value) => app.run(() => app.api.put('/admin/perms', { role, page, value }), 'Access updated');
 export const permReset = app => confirm(app, 'Reset access', 'Restore every role to its default page access?', 'Reset', () => app.run(() => app.api.post('/admin/perms/reset'), 'Access reset to defaults'));
 
-/* Danger zone (DEMO mode or FEATURES=dangerZone=on): type DELETE, then confirm once more. */
+/* Go-live switch: off in one step; back on only with DELETE typed. */
+export function dataToolsSet(app, on) {
+  if (!on) return confirm(app, 'Switch off delete buttons', <>Hide <b>Delete all members &amp; visits</b>, <b>Delete everything</b> and <b>Reset to sample data</b> for go-live? Records can still be archived one by one.</>, 'Switch off',
+    () => app.run(() => app.api.put('/admin/data-tools', { on: false }), 'Delete buttons switched off'));
+  app.openModal(<FormModal title="Switch delete buttons back on"
+    pre={<div className="alert bad"><span>Only do this before go-live or for testing. Every use is recorded in the audit log.</span></div>}
+    fields={[{ n: 'confirm', l: 'Type DELETE to continue', req: 1, ph: 'DELETE', full: 1 }]}
+    buttons={[{ label: 'Switch on', cls: 'bad', run: v => v.confirm !== 'DELETE' ? 'Type DELETE in capital letters to continue.' : app.mutate(() => app.api.put('/admin/data-tools', { on: true, confirm: 'DELETE' }), 'Delete buttons switched on') }]} />);
+}
+/* Danger zone (while the go-live switch is on, or DEMO mode): type DELETE, then confirm once more. */
 function dangerAction(app, title, what, path, done, after) {
   app.openModal(<FormModal title={title}
     pre={<div className="alert bad"><span>{what} <b>This cannot be undone.</b> Download a JSON backup first if you may need the data again.</span></div>}

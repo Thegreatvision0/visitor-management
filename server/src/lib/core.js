@@ -41,6 +41,8 @@ export async function getSettings() {
   if (!s) s = await Settings.create({ _id: 'app', lists: defaultLists(), perms: null, tomb: {} });
   return s;
 }
+/** Admin → Data delete / reset buttons: on until the admin switches them off before go-live (always on in DEMO / FEATURES=dangerZone=on). */
+export const dataToolsOn = s => s.dataTools !== false;
 export async function getRoles() { const s = await getSettings(); return resolveRoles(s.perms); }
 
 /* ---- Write lock ----

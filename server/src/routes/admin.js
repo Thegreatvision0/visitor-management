@@ -3,7 +3,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { User, Settings, Branch, Department, Member, Registration, Allocation, Duty, Attendance, Bed, DATA_MODELS } from '../models/index.js';
 import { superOnly } from '../middleware/auth.js';
-import { nid, log, fail, notFound, getSettings, syncCounters, HttpError } from '../lib/core.js';
+import { nid, log, fail, notFound, getSettings, syncCounters, HttpError, dataToolsOn } from '../lib/core.js';
 import { feature, isDemo } from '../lib/config.js';
 import { body, check, oneOf } from '../lib/validate.js';
 import { exportAll, replaceAll } from '../services/data.js';
@@ -137,11 +137,21 @@ r.get('/export', async (req, res) => {
 r.post('/import', async (req, res) => { await replaceAll(req.body); await log(req.user, 'Backup imported'); ok(res); });
 r.post('/normalize', async (req, res) => { const n = await normalizeAll(); await log(req.user, `Data clean-up: ${n.total} record(s) tidied`); res.json(n); });
 r.post('/import-djjs-branches', async (req, res) => res.json(await importDjjsBranches(req.user)));
-/* Danger zone: only when switched on (always in DEMO mode), and only with "DELETE" typed by the admin. */
-function danger(req, res, next) {
-  if (!feature('dangerZone')) return next(new HttpError(403, 'This action is switched off on the live system. It is available in DEMO mode, or with FEATURES=dangerZone=on.'));
-  if ((req.body || {}).confirm !== 'DELETE') return next(new HttpError(400, 'Type DELETE to confirm.'));
-  next();
+/* Go-live switch for the delete / reset buttons. Switching off is one click; switching back on needs DELETE typed. */
+r.put('/data-tools', async (req, res) => {
+  const { on, confirm } = req.body || {};
+  if (typeof on !== 'boolean') fail('Choose on or off.');
+  if (on && confirm !== 'DELETE') fail('Type DELETE to switch the delete buttons back on.');
+  await Settings.updateOne({ _id: 'app' }, { $set: { dataTools: on } });
+  await log(req.user, on ? 'Delete / reset buttons switched ON' : 'Delete / reset buttons switched OFF (go-live)'); ok(res);
+});
+/* Danger zone: only while the go-live switch is on (always in DEMO mode), and only with "DELETE" typed by the admin. */
+async function danger(req, res, next) {
+  try {
+    if (!feature('dangerZone') && !dataToolsOn(await getSettings())) return next(new HttpError(403, 'Delete and reset are switched off (Admin → Data → go-live switch).'));
+    if ((req.body || {}).confirm !== 'DELETE') return next(new HttpError(400, 'Type DELETE to confirm.'));
+    next();
+  } catch (e) { next(e); }
 }
 r.post('/reset-sample', danger, async (req, res) => { await replaceAll(buildSample({ demo: isDemo() })); await log(req.user, 'Reset to sample data'); ok(res); });
 r.post('/clear-people', danger, async (req, res) => {
