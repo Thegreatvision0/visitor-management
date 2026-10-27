@@ -3,7 +3,8 @@ import { Router } from 'express';
 import { GuestVisit, Department, Room, Building } from '../models/index.js';
 import { need } from '../middleware/auth.js';
 import { nid, log, fail, getSettings } from '../lib/core.js';
-import { body, check, isDate } from '../lib/validate.js';
+import { body, check, isDate, zfail } from '../lib/validate.js';
+import { inviteSchema } from '../../../shared/schemas.js';
 import { today, addDays, nowLocal, fd } from '../../../shared/dates.js';
 import { PARKINGS, VEHICLE_TYPES, visitNeedsApproval, vehicleNo, isMobile } from '../../../shared/constants.js';
 import * as V from '../services/visits.js';
@@ -36,6 +37,7 @@ r.post('/', need('visitors'), async (req, res) => {
   const u = req.user, v = body(req, ['guestName', 'guestMobile', 'meetWith', 'deptId', 'deptName', 'date', 'time', 'note', 'vehicleType', 'vehicleNumber']);
   V.must(V.has(u, 'invite'), 'You do not have permission to invite guests (Admin → Guest visit access).');
   if (v.guestMobile && !isMobile(v.guestMobile)) fail('Guest mobile must be a valid 10-digit mobile number.');
+  zfail(inviteSchema, v);
   if (v.date) { isDate(v.date, 'Date'); if (v.date < today()) fail('The visit date cannot be in the past.'); }
   if (v.time && !TIME.test(v.time)) fail('Enter the time as HH:MM.');
   /* a department head's guests are their own: the meeting is fixed to the head and their department,

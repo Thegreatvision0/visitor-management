@@ -1,7 +1,8 @@
 /* App shell: sidebar navigation, top bar with member search, notifications and profile menu. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context.jsx';
-import { Avatar } from './ui.jsx';
+import { Avatar, Badge } from './ui.jsx';
+import { getPrefs, setPrefs } from '../lib/prefs.js';
 import { today, diffDays, relTime } from '@shared/dates.js';
 import { stayStart, stayEnd, stayType, pendingExt } from '@shared/constants.js';
 import { memberView } from '../modals/members.jsx';
@@ -10,6 +11,22 @@ import { approveOpen, regView, rcArrive } from '../modals/regs.jsx';
 import { bedAssign } from '../modals/beds.jsx';
 import { dutyAssign } from '../modals/duties.jsx';
 import { viewVisit } from '../modals/visits.jsx';
+
+/** Global search: members (ID, name, mobile), requests (ID), guests (name, mobile, ID, vehicle number) — grouped. */
+function searchAll(D, q) {
+  const ql = q.trim().toLowerCase(), qn = ql.replace(/[\s-]/g, '');
+  if (ql.length < 2) return [];
+  const has = (...xs) => xs.some(x => x && String(x).toLowerCase().replace(/[\s-]/g, '').includes(qn));
+  /* archived members are found too (marked), so a "deleted" Member ID never just disappears */
+  const members = D.allMembers().filter(m => has(m.id, m.name, m.mobile) || String(m.name).toLowerCase().includes(ql)).sort((a, b) => !!a.archived - !!b.archived).slice(0, 6)
+    .map(m => ({ key: 'm' + m.id, m, title: m.name, tag: m.archived ? 'Archived' : null, sub: `${m.id} · ${m.mobile} · ${D.bName(m.branchId)}`, open: app => memberView(app, m.id) }));
+  const regs = D.regs().filter(r => has(r.id)).slice(0, 5)
+    .map(r => ({ key: 'r' + r.id, title: `${r.id} — ${D.mName(r.memberId)}`, tag: r.status, sub: `${D.bName(r.branchId)}`, open: app => regView(app, r.id) }));
+  const guests = (D.data.visits || []).filter(v => has(v.id, v.guest && v.guest.name, v.guest && v.guest.mobile, v.vehicle && v.vehicle.number)).slice(0, 6)
+    .map(v => ({ key: 'g' + v.id, title: (v.guest && v.guest.name) || 'Guest (not registered yet)', tag: v.status,
+      sub: [v.id, v.vehicle && v.vehicle.has && v.vehicle.number ? '🚗 ' + v.vehicle.number : '', v.date ? v.date : '', v.meetWith ? 'meeting ' + v.meetWith : ''].filter(Boolean).join(' · '), open: app => viewVisit(app, v.id) }));
+  return [['Members', members], ['Requests', regs], ['Guests & vehicles', guests]].filter(g => g[1].length);
+}
 
 export const NAV = [['dashboard', 'Dashboard', 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z'],
   ['members', 'Member Master', 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75'],
@@ -82,14 +99,24 @@ function openNotice(app, n) {
 export default function Layout({ page, children }) {
   const app = useApp(), { D, me, go, logout } = app;
   const [side, setSide] = useState(false), [menu, setMenu] = useState(null), [q, setQ] = useState('');
-  const top = useRef(null);
+  const top = useRef(null), qRef = useRef(null), [prefs, setP] = useState(getPrefs), [hi, setHi] = useState(0);
+  const pref = (k, v) => { const p = { ...prefs, [k]: v }; setP(p); setPrefs(p); };
+  const G = D.feature('globalSearch');
+  /* Ctrl+K (or ⌘K) jumps to the search box from anywhere */
+  useEffect(() => {
+    if (!G) return undefined;
+    const k = e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (qRef.current) { qRef.current.focus(); qRef.current.select(); } setMenu('search'); } };
+    document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k);
+  }, [G]);
   useEffect(() => {
     const h = e => { if (top.current && !top.current.contains(e.target)) setMenu(null); };
     document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
   }, []);
   const nn = notices(D), approvalsN = D.regs().filter(r => r.status === 'Submitted' || pendingExt(r)).length;
   /* archived members are found too (marked), so a "deleted" Member ID never just disappears */
-  const ql = q.trim().toLowerCase(), hits = ql.length >= 2 ? D.allMembers().filter(m => (m.id + m.name + m.mobile).toLowerCase().includes(ql)).sort((a, b) => !!a.archived - !!b.archived).slice(0, 8) : [];
+  const groups = G ? searchAll(D, q) : [], flatHits = groups.flatMap(g => g[1]);
+  const pick = x => { setMenu(null); setQ(''); if (qRef.current) qRef.current.blur(); x.open(app); };
+  const ql = q.trim().toLowerCase(), hits = !G && ql.length >= 2 ? D.allMembers().filter(m => (m.id + m.name + m.mobile).toLowerCase().includes(ql)).sort((a, b) => !!a.archived - !!b.archived).slice(0, 8) : [];
   const nav = (p, tab, f) => { setSide(false); setMenu(null); if (f) app.setFs(f); if (tab) app.setTab(p, tab); go(p); };
   /* event notifications for this user's role / branch / department (newest first, from the server);
      a notification asking for a task disappears once the task is done */
@@ -122,8 +149,16 @@ export default function Layout({ page, children }) {
           <button className="burger" type="button" onClick={() => setSide(s => !s)} aria-label="Menu"><Icon d="M3 6h18M3 12h18M3 18h18" /></button>
           <div className="gsw">
             <Icon d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3" />
-            <input type="search" placeholder="Search member by ID, name or mobile…" autoComplete="off" value={q} onChange={e => { setQ(e.target.value); setMenu('search'); }} onFocus={() => setMenu('search')} />
-            {menu === 'search' && ql.length >= 2 ? <div className="dd">{hits.length ? hits.map(m => (
+            <input ref={qRef} type="search" placeholder={G ? 'Search members, requests, guests, vehicles…  (Ctrl+K)' : 'Search member by ID, name or mobile…'} autoComplete="off" value={q} aria-label="Search"
+              aria-controls="gsearch-list" aria-expanded={menu === 'search' && ql.length >= 2}
+              onChange={e => { setQ(e.target.value); setMenu('search'); setHi(0); }} onFocus={() => setMenu('search')}
+              onKeyDown={e => { if (!G) return; if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, flatHits.length - 1)); } if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)); }
+                if (e.key === 'Enter' && flatHits[hi]) { e.preventDefault(); pick(flatHits[hi]); } if (e.key === 'Escape') { setMenu(null); e.target.blur(); } }} />
+            {G && menu === 'search' && ql.length >= 2 ? <div className="dd gsearch" id="gsearch-list" role="listbox">{groups.length ? groups.map(([title, list]) => <div key={title} role="group" aria-label={title}><div className="ddh">{title}</div>
+              {list.map(x => { const i = flatHits.indexOf(x); return <button key={x.key} type="button" role="option" aria-selected={i === hi} className={'it' + (i === hi ? ' hi' : '')} onMouseEnter={() => setHi(i)} onClick={() => pick(x)}>
+                {x.m ? <Avatar m={x.m} /> : null}<span><b>{x.title}</b>{x.tag ? <> <Badge s={x.tag} /></> : null}<br /><small>{x.sub}</small></span></button>; })}</div>)
+              : <div className="empty">Nothing found for “{q.trim()}”.</div>}</div> : null}
+            {!G && menu === 'search' && ql.length >= 2 ? <div className="dd">{hits.length ? hits.map(m => (
               <button key={m.id} type="button" className="it" onClick={() => { setMenu(null); setQ(''); memberView(app, m.id); }}>
                 <Avatar m={m} /><span><b>{m.name}</b>{m.archived ? <> <span className="b gray">Archived</span></> : null}<br /><small>{m.id} · {m.mobile} · {D.bName(m.branchId)}</small></span>
               </button>)) : <div className="empty">No matching member.</div>}</div> : null}
@@ -145,11 +180,16 @@ export default function Layout({ page, children }) {
             </button>
             {menu === 'prof' ? <div className="dd" style={{ minWidth: 260 }}><div style={{ padding: 12 }}>
               <small>Signed in as <b>{me.username}</b></small>
+              {D.feature('displayPrefs') ? <div className="prefs" role="group" aria-label="Display">
+                <label className="check"><input type="checkbox" checked={prefs.dark} onChange={e => pref('dark', e.target.checked)} />Dark mode</label>
+                <label className="check"><input type="checkbox" checked={prefs.big} onChange={e => pref('big', e.target.checked)} />Bigger text</label>
+              </div> : null}
               <button className="btn" type="button" style={{ width: '100%', margin: '10px 0 6px' }} onClick={() => { setMenu(null); changePassword(app); }}>Change password</button>
               <button className="btn" type="button" style={{ width: '100%' }} onClick={logout}>Sign out</button>
             </div></div> : null}
           </div>
         </header>
+        {app.offline && D.feature('pageStates') ? <div className="netbar" role="alert"><span>Connection to the server lost — showing the last loaded data. Changes cannot be saved until it is back.</span><button type="button" className="btn sm" onClick={app.retry}>Retry now</button></div> : null}
         <main>{children}</main>
       </div>
     </div>

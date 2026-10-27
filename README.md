@@ -114,7 +114,7 @@ The current switches are visible at `/api/meta`.
 
 | Switch | Default | What it does |
 |---|---|---|
-| dangerZone | off (on in DEMO) | Admin → Data reset / delete-everything tools |
+| dangerZone | off (on in DEMO) | Forces the Admin → Data reset / delete-everything tools on. Without it they follow the **go-live switch** in Admin → Data (on until you switch it off; back on only by typing DELETE) |
 | archive | on | Archive / restore branches, departments, requests (members are always archived, never erased) |
 | kpiHelp | on | ⓘ definitions on Dashboard / Reception / Accommodation counts |
 | bedLock | on | Database lock so one bed can never be booked twice for overlapping dates |
@@ -122,6 +122,13 @@ The current switches are visible at `/api/meta`.
 | arrivalNeedsBed | on | Reception "Confirm arrival" asks for a free bed (right gender, right dates) when none is assigned |
 | duplicateMobile | on | Member form warns while typing if the mobile is already used |
 | maskMobiles | on | 98XXXXX280 for roles without "See mobile numbers" (Admin → Roles & access); Reveal is audit-logged |
+| stayBadges | on | Not arrived / Resident / Overdue / Departed badges; attendance % red < 60, amber 60–80, green > 80 |
+| rowMenus | on | Monthly / Long-Term: one main action per row, the rest in "⋯" |
+| todayTasks | on | Dashboard "Today's tasks" (late arrivals, stays ending in 7 days, beds to clean, approvals) and 7 / 30 day trend |
+| globalSearch | on | Top-bar search over members, requests, guests and vehicle numbers; Ctrl+K |
+| displayPrefs | on | Profile menu → Dark mode, Bigger text (kept in this browser) |
+| pageStates | on | Loading spinner, "connection lost — Retry" bar, page error screen with "Try again" |
+| tableTools | on | Columns, CSV export, sorting and saved filters on Branches, Pre-Registration, Approvals, Reception |
 
 **Data migrations** run automatically at start-up (`server/src/migrations/index.js`); each runs once and is recorded
 in the `migrations` collection. They only add or fill fields.

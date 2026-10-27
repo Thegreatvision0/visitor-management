@@ -3,7 +3,8 @@
 import { Router } from 'express';
 import { GuestVisit, Department } from '../models/index.js';
 import { HttpError, fail, log } from '../lib/core.js';
-import { body, check, isDate } from '../lib/validate.js';
+import { body, check, isDate, zfail } from '../lib/validate.js';
+import { guestSchema } from '../../../shared/schemas.js';
 import { clientIp, rateLimited } from '../lib/security.js';
 import { today, fd } from '../../../shared/dates.js';
 import { PARKINGS, VEHICLE_TYPES, vehicleNo, isMobile } from '../../../shared/constants.js';
@@ -44,6 +45,7 @@ r.post('/visits/:token', async (req, res) => {
   const hv = (req.body || {}).hasVehicle, hasVehicle = hv !== undefined ? !!hv : !!v.vehicleType && v.vehicleType !== 'No vehicle';
   if (g.lockMeeting) { v.meetWith = g.meetWith; v.deptName = g.deptName; v.deptId = g.deptId; } // fixed by the inviting department head
   check(v, [['name', 'Your name', 'req'], ['mobile', 'Mobile number', 'req tel'], ['meetWith', 'Whom you are meeting', 'req'], ['deptName', 'Department', 'req'], ['date', 'Date', 'req'], ['time', 'Time', 'req'], ['purpose', 'Purpose of the visit', 'req']]);
+  zfail(guestSchema, v);
   isDate(v.date, 'Date'); if (v.date < today()) fail('The date cannot be in the past.');
   if (!TIME.test(v.time)) fail('Enter the time as HH:MM.');
   if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) fail('Enter a valid email address.');

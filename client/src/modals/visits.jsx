@@ -5,6 +5,8 @@ import { FormModal, Modal, CloseBtn, Info, confirm } from '../components/Modal.j
 import { Badge, KV, Chip } from '../components/ui.jsx';
 import { fd, fdt, today, addDays } from '@shared/dates.js';
 import { PARKINGS, APPROVAL_PARKING, VEHICLE_TYPES, timeAdd, visitNeedsApproval } from '@shared/constants.js';
+import { inviteSchema, firstIssue } from '@shared/schemas.js';
+import { personName } from '@shared/text.js';
 
 /* guests open the link from their own phones, so it must use the public address when one is configured */
 let publicUrl = '';
@@ -43,7 +45,7 @@ export function inviteGuest(app) {
   const { D, api, me } = app;
   /* a department head's guest is their own: meeting fixed to the head and their department */
   const lock = D.hasCap('incharge') && !!me.deptId && !['superadmin', 'manager'].includes(me.role);
-  app.openModal(<FormModal title="Invite a guest" values={lock ? { meetWith: me.name } : {}}
+  app.openModal(<FormModal title="Invite a guest" values={lock ? { meetWith: me.name } : {}} check={v => firstIssue(inviteSchema, { ...v, guestName: personName(v.guestName || ''), meetWith: personName(v.meetWith || '') })}
     pre={lock
       ? <div className="note">This guest is <b>your guest</b>: the meeting is with you ({me.name}, {D.dName(me.deptId)}). The guest cannot change it, and other department heads do not see your guests. They fill in the appointment and vehicle through the link; you then accept it and arrange parking, office and residence.</div>
       : <div className="note">A registration link is created for the guest. They fill in the appointment, whom they meet and their vehicle; the department in-charge then accepts it.</div>}

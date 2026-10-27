@@ -4,7 +4,8 @@ import { Department, Duty, Attendance, Registration } from '../models/index.js';
 import { need } from '../middleware/auth.js';
 import { nid, log, fail, notFound, forbidden, archiveStamp } from '../lib/core.js';
 import { feature } from '../lib/config.js';
-import { body, check, isDate, oneOf } from '../lib/validate.js';
+import { body, check, isDate, oneOf, zfail } from '../lib/validate.js';
+import { deptSchema } from '../../../shared/schemas.js';
 import { deleteDept, canDept, dutyOn, onSite, assertRegScope, getReg, scopeRegIds, memberName } from '../services/domain.js';
 import { today } from '../../../shared/dates.js';
 import { ATT } from '../../../shared/constants.js';
@@ -15,7 +16,7 @@ const ok = res => res.json({ ok: true });
 const notSupervisor = (req, res, next) => req.user.role === 'supervisor' ? next(forbidden('Department supervisors cannot add or remove departments.')) : next();
 
 async function saveDept(req, id) {
-  const v = body(req, ['name', 'supervisor', 'active']); v.name = cleanText(v.name); v.supervisor = personName(v.supervisor); check(v, [['name', 'Department name', 'req'], ['supervisor', 'Supervisor', 'req']]);
+  const v = body(req, ['name', 'supervisor', 'active']); v.name = cleanText(v.name); v.supervisor = personName(v.supervisor); check(v, [['name', 'Department name', 'req'], ['supervisor', 'Supervisor', 'req']]); zfail(deptSchema, v);
   if ((await Department.find({ _id: { $ne: id || null } }).lean()).some(x => x.name.toLowerCase() === v.name.toLowerCase())) fail('A department with this name exists.');
   const active = v.active === true || v.active === 'Yes';
   let d = id ? await Department.findById(id) : null;

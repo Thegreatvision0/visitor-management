@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context.jsx';
 import { natCmp } from '@shared/text.js';
+import { stayEnd } from '@shared/constants.js';
+import { today } from '@shared/dates.js';
 
 /* per-browser conveniences (column choice, saved filters); the app works the same without them */
-const store = {
+export const store = {
   get: (k, d) => { try { const v = localStorage.getItem('nm.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem('nm.' + k, JSON.stringify(v)); } catch { /* private mode */ } }
 };
@@ -44,9 +46,7 @@ export function Table({ cols, rows, empty, rowKey, id, pageSize = 25, select, bu
   const tick = (r, on) => { const s = new Set(sel); on ? s.add(key(r)) : s.delete(key(r)); select.set(s); };
   const exportCsv = () => {
     const cs = shown.filter(label), txt = (c, r) => c[2] && c[2].csv ? c[2].csv(r) : c[2] && c[2].sort ? c[2].sort(r) : '';
-    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-    const body = [cs.map(c => q(label(c))).join(',')].concat(list.map(r => cs.map(c => q(txt(c, r))).join(','))).join('\r\n');
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + body], { type: 'text/csv' })); a.download = csv + '.csv'; a.click(); URL.revokeObjectURL(a.href);
+    downloadCsv(csv, cs.map(label), list.map(r => cs.map(c => txt(c, r))));
   };
   const tools = id || csv || (sel && sel.size);
   return <>
@@ -79,6 +79,13 @@ export function Table({ cols, rows, empty, rowKey, id, pageSize = 25, select, bu
   </>;
 }
 
+/** Download rows as a CSV file that Excel opens with the right characters (UTF-8 with BOM). */
+export function downloadCsv(name, head, rows) {
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const body = [head.map(q).join(',')].concat(rows.map(r => r.map(q).join(','))).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + body], { type: 'text/csv' })); a.download = name + '.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
 /** Named filter sets for a page, kept in this browser (e.g. "Delhi residents"). keys: the ui.f keys the page uses. */
 export function SavedFilters({ page, keys }) {
   const { ui, setFs, toast } = useApp();
@@ -100,8 +107,17 @@ export function SavedFilters({ page, keys }) {
   </span>;
 }
 
-/** Attendance % — red below 60, amber below 75, green from 75. */
-export const AttPct = ({ pct }) => pct == null ? '—' : <span className={'b ' + (pct < 60 ? 'bad' : pct < 75 ? 'warn' : 'ok')} title={pct < 60 ? 'Low attendance' : ''}>{pct}%</span>;
+/** Attendance % — red below 60, amber 60–80, green above 80 (feature stayBadges; before: amber below 75). */
+export function AttPct({ pct }) {
+  const { feature } = useApp();
+  if (pct == null) return '—';
+  const amber = feature('stayBadges') ? pct <= 80 : pct < 75, cls = pct < 60 ? 'bad' : amber ? 'warn' : 'ok';
+  return <span className={'b ' + cls} title={cls === 'bad' ? 'Low attendance (below 60%)' : cls === 'warn' ? 'Attendance needs attention' : 'Good attendance'}>{pct}%</span>;
+}
+
+/** Where a request stands on site: Not arrived, Resident, Overdue (past the approved end date) or Departed. */
+export const stayStatus = (r, t = today()) => r.status === 'Approved' ? 'Not arrived' : r.status === 'Checked In' ? (stayEnd(r) < t ? 'Overdue' : 'Resident') : r.status === 'Checked Out' ? 'Departed' : '';
+export function StayBadge({ r }) { const s = stayStatus(r); return s ? <Badge s={s} /> : null; }
 
 /** Password box with a show / hide button. */
 export function PwInput(props) {

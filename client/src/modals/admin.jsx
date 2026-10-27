@@ -4,6 +4,8 @@ import { FormModal, Info, confirm } from '../components/Modal.jsx';
 import { sameName, today } from '@shared/dates.js';
 import { VISIT_CAPS } from '@shared/constants.js';
 import { BASE, getToken } from '../api.js';
+import { userSchema, firstIssue } from '@shared/schemas.js';
+import { personName } from '@shared/text.js';
 
 const ROLE_TITLE = { supervisor: 'Add department head', office: 'Add Main Office user', security: 'Add Abhinandan Dwar security user' };
 function UserForm({ id, role }) {
@@ -13,7 +15,7 @@ function UserForm({ id, role }) {
   /* department is typed: choose from the list or enter a new name (created when the user is saved) */
   const findDept = n => data.depts.find(d => d.name.toLowerCase() === String(n || '').trim().replace(/\s+/g, ' ').toLowerCase());
   const needsDept = v => v.role === 'supervisor' || (v.visitCaps || []).includes('incharge');
-  return <FormModal title={ex ? 'Edit user' : ROLE_TITLE[role] || 'Add user'}
+  return <FormModal title={ex ? 'Edit user' : ROLE_TITLE[role] || 'Add user'} check={v => firstIssue(userSchema, { ...v, name: personName(v.name) })}
     values={ex ? { ...ex, password: '', visitCaps: ex.visitCaps || [], deptName: ex.deptId ? D.dName(ex.deptId) : '' } : { role: role || 'reception', visitCaps: [], deptName: '' }}
     datalists={{ userDeptList: data.depts.map(d => d.name) }}
     fields={[{ n: 'name', l: 'Display name', req: 1 }, { n: 'username', l: 'Username (for sign-in)', req: 1, ph: 'e.g. reception2' },

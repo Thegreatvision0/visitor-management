@@ -1,5 +1,5 @@
 import { useApp } from '../context.jsx';
-import { PageHead, PBtn, Btn, Table, Badge, Avatar, Tabs, useTab, FInput, Mobile } from '../components/ui.jsx';
+import { PageHead, PBtn, Btn, Table, Badge, Avatar, Tabs, useTab, FInput, Mobile, StayBadge } from '../components/ui.jsx';
 import { fd, fdt, today } from '@shared/dates.js';
 import { stayStart, stayEnd, stayType } from '@shared/constants.js';
 import { rcArrive, rcOut, rcUndoIn, rcUndoOut, regView, walkin } from '../modals/regs.jsx';
@@ -19,17 +19,19 @@ export default function Reception() {
   const bedC = r => { const a = D.activeAlloc(r.id); return a ? D.bedShort(D.bedO(a.bedId)) : <small>Not allocated</small>; };
   const view = r => <Btn onClick={() => regView(app, r.id)}>View</Btn>;
   const canExtend = D.canEdit('accommodation') || D.canEdit('approvals'); // extend a stay whose last date has passed
+  const tt = app.feature('tableTools'), T = k => tt ? { id: 'reception-' + k, csv: 'reception-' + k } : {};
+  const whoS = { sort: r => D.mName(r.memberId), csv: r => `${D.mName(r.memberId)} (${r.memberId})` };
   let b = null;
   const chipsA = <div className="fchips">{chip('', 'rc.af', 'Today & late', K.expected.length, COUNT_HELP.expected)}{chip('up', 'rc.af', 'Upcoming', K.upcoming.length, COUNT_HELP.upcoming)}{chip('all', 'rc.af', 'All approved', K.expected.length + K.upcoming.length)}</div>;
   const chipsD = <div className="fchips">{chip('', 'rc.df', 'All due', K.overdue.length + K.dueToday.length)}{chip('today', 'rc.df', 'Due today', K.dueToday.length, COUNT_HELP.dueToday, 'warn')}{chip('od', 'rc.df', 'Overdue', K.overdue.length, COUNT_HELP.overdue, 'bad')}</div>;
-  if (tab === 'a') b = <>{chipsA}<Table rows={exp.filter(match).sort((a, c) => stayStart(a).localeCompare(stayStart(c)))} empty="No approved arrivals waiting." cols={[
-    ['Member', who], ['Branch', r => D.bName(r.branchId)], ['Expected', r => <>{fd(stayStart(r))}{stayStart(r) === t ? <> <span className="b info">Today</span></> : stayStart(r) < t ? <> <span className="b bad">Late</span></> : null}</>],
-    ['Until', r => fd(stayEnd(r))], ['Type', r => <Badge s={stayType(r)} />], ['Bed', bedC], ['', r => ed ? <Btn cls="pri" onClick={() => rcArrive(app, r.id)}>Confirm arrival</Btn> : view(r)]]} /></>;
-  if (tab === 'r' || tab === 'd') b = <>{tab === 'd' ? chipsD : null}<Table rows={(tab === 'r' ? res : dep).filter(match).sort((a, c) => stayEnd(a).localeCompare(stayEnd(c)))} empty="Nobody here." cols={[
-    ['Member', who], ['Arrived', r => fdt(r.actualIn)], ['Expected departure', r => <>{fd(stayEnd(r))}{stayEnd(r) < t ? <> <Badge s="Overdue" /></> : stayEnd(r) === t ? <> <span className="b warn">Today</span></> : null}</>],
-    ['Type', r => <Badge s={stayType(r)} />], ['Accommodation', bedC], ['', r => <>{ed ? <><Btn cls="pri" onClick={() => rcOut(app, r.id)}>Check out</Btn><Btn onClick={() => rcUndoIn(app, r.id)}>Undo check-in</Btn></> : null}{canExtend ? <Btn cls={stayEnd(r) < t ? 'ok' : ''} onClick={() => bedExtend(app, r.id)}>Extend stay</Btn> : null}{view(r)}</>]]} /></>;
-  if (tab === 'h') b = <Table rows={R.filter(r => r.actualIn).filter(match).sort((a, c) => c.actualIn.localeCompare(a.actualIn)).slice(0, 80)} empty="No visits yet." cols={[
-    ['Member', who], ['Arrived', r => fdt(r.actualIn)], ['Departed', r => fdt(r.actualOut)], ['Type', r => <Badge s={stayType(r)} />], ['Status', r => <Badge s={r.status} />],
+  if (tab === 'a') b = <>{chipsA}<Table rows={exp.filter(match).sort((a, c) => stayStart(a).localeCompare(stayStart(c)))} {...T('arrivals')} empty="No approved arrivals waiting." cols={[
+    ['Member', who, whoS], ['Branch', r => D.bName(r.branchId), { sort: r => D.bName(r.branchId) }], ['Expected', r => <>{fd(stayStart(r))}{stayStart(r) === t ? <> <span className="b info">Today</span></> : stayStart(r) < t ? <> <span className="b bad">Late</span></> : null}</>, { sort: stayStart }],
+    ['Until', r => fd(stayEnd(r)), { sort: stayEnd }], ['Type', r => <Badge s={stayType(r)} />, { sort: stayType }], ['Bed', bedC, { csv: r => { const a = D.activeAlloc(r.id); return a ? D.bedShort(D.bedO(a.bedId)) : ''; } }], ['', r => ed ? <Btn cls="pri" onClick={() => rcArrive(app, r.id)}>Confirm arrival</Btn> : view(r)]]} /></>;
+  if (tab === 'r' || tab === 'd') b = <>{tab === 'd' ? chipsD : null}<Table rows={(tab === 'r' ? res : dep).filter(match).sort((a, c) => stayEnd(a).localeCompare(stayEnd(c)))} {...T(tab === 'r' ? 'residents' : 'departures')} empty="Nobody here." cols={[
+    ['Member', who, whoS], ['Arrived', r => fdt(r.actualIn), { sort: r => r.actualIn }], ['Expected departure', r => <>{fd(stayEnd(r))}{stayEnd(r) < t ? <> <Badge s="Overdue" /></> : stayEnd(r) === t ? <> <span className="b warn">Today</span></> : null}</>, { sort: stayEnd }],
+    ['Type', r => <Badge s={stayType(r)} />, { sort: stayType }], ['Accommodation', bedC, { csv: r => { const a = D.activeAlloc(r.id); return a ? D.bedShort(D.bedO(a.bedId)) : ''; } }], ['', r => <>{ed ? <><Btn cls="pri" onClick={() => rcOut(app, r.id)}>Check out</Btn><Btn onClick={() => rcUndoIn(app, r.id)}>Undo check-in</Btn></> : null}{canExtend ? <Btn cls={stayEnd(r) < t ? 'ok' : ''} onClick={() => bedExtend(app, r.id)}>Extend stay</Btn> : null}{view(r)}</>]]} /></>;
+  if (tab === 'h') b = <Table rows={R.filter(r => r.actualIn).filter(match).sort((a, c) => c.actualIn.localeCompare(a.actualIn)).slice(0, 80)} {...T('history')} empty="No visits yet." cols={[
+    ['Member', who, whoS], ['Arrived', r => fdt(r.actualIn), { sort: r => r.actualIn }], ['Departed', r => fdt(r.actualOut), { sort: r => r.actualOut || '' }], ['Type', r => <Badge s={stayType(r)} />, { sort: stayType }], ['Status', r => app.feature('stayBadges') ? <StayBadge r={r} /> : <Badge s={r.status} />, { sort: r => r.status }],
     ['', r => <>{view(r)}{ed && r.status === 'Checked Out' ? <Btn onClick={() => rcUndoOut(app, r.id)}>Undo check-out</Btn> : null}</>]]} />;
   /* lookup of members without a live visit */
   const lookup = q.length >= 2 ? D.members().filter(m => (m.id + m.name + m.mobile).toLowerCase().includes(q) && !data.regs.some(r => r.memberId === m.id && ['Approved', 'Checked In'].includes(r.status))).slice(0, 5) : [];

@@ -6,6 +6,8 @@ import { useParams } from 'react-router-dom';
 import { BASE } from '../api.js';
 import { fd } from '@shared/dates.js';
 import { isMobile } from '@shared/constants.js';
+import { guestSchema, firstIssue } from '@shared/schemas.js';
+import { personName } from '@shared/text.js';
 
 const NO_VEHICLE = 'No vehicle (coming on foot / dropped off)';
 
@@ -52,6 +54,7 @@ export default function GuestPage() {
     e.preventDefault(); setErr('');
     if (!f.name || !f.mobile || !f.meetWith || !f.deptName || !f.date || !f.time || !f.purpose) return setErr('Please fill in all the fields marked *.');
     if (!isMobile(f.mobile)) return setErr('Please enter a valid 10-digit mobile number.');
+    const bad = firstIssue(guestSchema, { ...f, name: personName(f.name), meetWith: personName(f.meetWith) }); if (bad) return setErr(bad.message);
     if (hasVehicle && !f.vehicleNumber) return setErr('Please enter the vehicle number.');
     setBusy(true);
     try { setV(await call('POST', token, { ...f, hasVehicle })); setEdit(false); window.scrollTo(0, 0); } catch (x) { setErr(x.message); }

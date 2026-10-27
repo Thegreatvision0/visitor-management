@@ -62,7 +62,7 @@ export function AppProvider({ children }) {
   }, [loadSession, logout]);
   /* auto-refresh: every 10 s (and when the tab regains focus) ask the server whether anything
      changed, and reload the snapshot only then — new requests appear without refreshing the page */
-  const revRef = useRef(null);
+  const revRef = useRef(null), [offline, setOffline] = useState(false);
   useEffect(() => { if (data) revRef.current = data.rev; }, [data]);
   useEffect(() => {
     if (!me || me.mustChangePassword) return;
@@ -70,7 +70,7 @@ export function AppProvider({ children }) {
     const check = async () => {
       if (busy || document.hidden) return;
       busy = true;
-      try { const { rev } = await api.get('/rev'); if (rev !== revRef.current) await reload(); } catch { /* offline: try again next tick */ }
+      try { const { rev } = await api.get('/rev'); setOffline(false); if (rev !== revRef.current) await reload(); } catch { setOffline(true); /* try again next tick */ }
       busy = false;
     };
     const id = setInterval(check, 10000);
@@ -105,7 +105,8 @@ export function AppProvider({ children }) {
   const go = useCallback(page => { setModal(null); navigate('/' + page); window.scrollTo(0, 0); }, [navigate]);
 
   const feature = k => !!((data && data.features) || meta.features)[k];
-  const value = { revealed, reveal, meta, feature, me, data, D, booting, login, logout, loadSession, reload, api, toast, openModal, closeModal, mutate, run, ui, setF, setFs, setTab, toggle, go };
+  const retry = useCallback(async () => { try { await reload(); setOffline(false); toast('Connected again', 'ok'); } catch { setOffline(true); toast('Still cannot reach the server.', 'bad'); } }, [reload, toast]);
+  const value = { offline, retry, revealed, reveal, meta, feature, me, data, D, booting, login, logout, loadSession, reload, api, toast, openModal, closeModal, mutate, run, ui, setF, setFs, setTab, toggle, go };
   return (
     <Ctx.Provider value={value}>
       {meta.demo ? <div className="demo-ribbon" role="note">DEMO — sample data in a separate demo database, not the live system</div> : null}

@@ -14,3 +14,4 @@ deploy/logs/
 # test tooling and output
 tests/.browsers/
 tests/output/
+tests/*.png

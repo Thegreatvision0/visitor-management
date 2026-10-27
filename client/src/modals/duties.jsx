@@ -3,6 +3,8 @@ import { useApp } from '../context.jsx';
 import { FormModal, Info, confirm } from '../components/Modal.jsx';
 import { fd, today, dayOf } from '@shared/dates.js';
 import { stayStart, stayEnd } from '@shared/constants.js';
+import { deptSchema, firstIssue } from '@shared/schemas.js';
+import { personName, cleanText } from '@shared/text.js';
 
 function DutyForm({ regId, change }) {
   const { D, me, api, mutate } = useApp();
@@ -39,7 +41,7 @@ export function dutyDelete(app, id) {
 
 function DeptForm({ id }) {
   const { D, api, mutate } = useApp(), ex = id ? D.dept(id) : null;
-  return <FormModal title={ex ? 'Edit department' : 'Add department'} values={ex ? { name: ex.name, supervisor: ex.supervisor, active: ex.active ? 'Yes' : 'No' } : { active: 'Yes' }}
+  return <FormModal title={ex ? 'Edit department' : 'Add department'} check={v => firstIssue(deptSchema, { ...v, name: cleanText(v.name), supervisor: personName(v.supervisor) })} values={ex ? { name: ex.name, supervisor: ex.supervisor, active: ex.active ? 'Yes' : 'No' } : { active: 'Yes' }}
     fields={[{ n: 'name', l: 'Department name', req: 1 }, { n: 'supervisor', l: 'Supervisor', req: 1 }, { n: 'active', l: 'Active', t: 'select', opts: ['Yes', 'No'], req: 1 }]}
     buttons={[{ label: 'Save', run: v => mutate(() => ex ? api.put('/depts/' + id, v) : api.post('/depts', v), 'Department saved') }]} />;
 }

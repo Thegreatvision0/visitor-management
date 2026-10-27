@@ -5,7 +5,8 @@ import { User, Settings, Branch, Department, Member, Registration, Allocation, D
 import { superOnly } from '../middleware/auth.js';
 import { nid, log, fail, notFound, getSettings, syncCounters, HttpError, dataToolsOn } from '../lib/core.js';
 import { feature, isDemo } from '../lib/config.js';
-import { body, check, oneOf } from '../lib/validate.js';
+import { body, check, oneOf, zfail } from '../lib/validate.js';
+import { userSchema } from '../../../shared/schemas.js';
 import { exportAll, replaceAll } from '../services/data.js';
 import { buildSample } from '../services/sample.js';
 import { importDjjsBranches } from '../services/branches-import.js';
@@ -33,6 +34,7 @@ async function saveUser(req, id) {
   if (caps.some(c => !VISIT_CAP_KEYS.includes(c))) fail('Unknown guest visit permission.');
   if (caps.includes('incharge') && !(await deptOk())) fail('To accept appointments as an in-charge, the user needs a department.');
   check(v, [['name', 'Display name', 'req'], ['username', 'Username', 'req'], ['role', 'Role', 'req']]);
+  zfail(userSchema, v);
   oneOf(v.role, Object.keys(ROLE_DEFAULTS), 'role');
   v.username = v.username.toLowerCase();
   if (!/^[a-z0-9._-]{3,40}$/.test(v.username)) fail('Username: 3–40 characters, letters, digits, dot, dash or underscore.');

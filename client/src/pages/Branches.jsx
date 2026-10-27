@@ -1,5 +1,5 @@
 import { useApp } from '../context.jsx';
-import { PageHead, PBtn, Btn, FInput, FSelect, Chip, RowMenu, Table } from '../components/ui.jsx';
+import { PageHead, PBtn, Btn, FInput, FSelect, Chip, RowMenu, Table, SavedFilters, downloadCsv } from '../components/ui.jsx';
 import { archiveAsk } from '../components/Modal.jsx';
 import { fdt } from '@shared/dates.js';
 import { branchAdd, branchEdit, branchView, branchDelete } from '../modals/members.jsx';
@@ -19,10 +19,10 @@ export default function Branches() {
   const P = data.branches.filter(b => b.state === 'Punjab').length;
   const count = (id, f) => data.regs.filter(r => r.branchId === id && f(r)).length;
   const canDel = b => ed && (!isC || b.id !== me.branchId);
-  const rows = [];
+  const rows = [], flat = []; // flat: the branches shown, for CSV export
   const add = (b, depth) => {
     if (!hit(b)) return;
-    const subs = kids(b.id);
+    const subs = kids(b.id); flat.push(b);
     rows.push(<tr key={b.id}>
       <td data-label="Branch" className="rt-title" style={{ paddingLeft: 10 + depth * 24 }}>{depth ? <span className="muted">└ </span> : null}<b>{b.name}</b>{subs.length ? <> <Chip>{subs.length} sub-branch{subs.length > 1 ? 'es' : ''}</Chip></> : null}{depth ? <><br /><small>Sub-branch of {D.branch(b.parentId).name}</small></> : null}</td>
       <td data-label="District">{b.district}</td><td data-label="Coordinator">{b.coordinator}<br /><small>{b.phone}</small></td>
@@ -52,7 +52,9 @@ export default function Branches() {
         <button type="button" className={'fchip' + (arch ? ' on' : '')} aria-pressed={arch} onClick={() => app.setF('br.view', 'archived')}>Archived <b>{AB.length}</b></button></div> : null}
       {arch ? <Table rows={AB} empty="No archived branches." cols={[['Branch', b => <><b>{b.name}</b><br /><small>{b.state} · {b.district}</small></>], ['Archived', b => <>{fdt(b.archived.on)}<br /><small>by {b.archived.by}{b.archived.reason ? ' — ' + b.archived.reason : ''}</small></>],
         ['Members', b => data.members.filter(m => m.branchId === b.id && !m.archived).length], ['', b => ed ? <Btn cls="ok" onClick={() => app.run(() => app.api.post(`/branches/${b.id}/restore`), `${b.name} restored`)}>Restore</Btn> : null]]} /> : <>
-      <div className="filters"><FInput k="br.q" ph="Search branch, district, coordinator…" /><FSelect k="br.st" opts={D.STATES} all="All states" /></div>
+      <div className="filters"><FInput k="br.q" ph="Search branch, district, coordinator…" /><FSelect k="br.st" opts={D.STATES} all="All states" />
+        {app.feature('tableTools') ? <><SavedFilters page="branches" keys={['br.q', 'br.st']} /><button type="button" className="btn sm" disabled={!flat.length} onClick={() => downloadCsv('branches', ['Branch', 'Parent branch', 'State', 'District', 'Coordinator', 'Phone', 'Email', 'Members', 'Open requests', 'Residing now'],
+          flat.map(b => [b.name, b.parentId ? (D.branch(b.parentId) || {}).name : '', b.state, b.district, b.coordinator, b.phone, b.email || '', data.members.filter(m => m.branchId === b.id && !m.archived).length, count(b.id, r => ['Submitted', 'Approved'].includes(r.status)), count(b.id, r => r.status === 'Checked In')]))}>Export CSV</button></> : null}</div>
       {rows.length ? <div className="tw"><table className="rt">
         <thead><tr><th>State › Branch › Sub-branch</th><th>District</th><th>Coordinator</th><th>Members</th><th>Open requests</th><th>Residing now</th><th></th></tr></thead>
         <tbody>{rows}</tbody></table></div> : <div className="empty">No branches found.</div>}

@@ -1,5 +1,5 @@
 import { useApp } from '../context.jsx';
-import { PageHead, PBtn, Btn, Table, Badge, FInput, FSelect, RowMenu } from '../components/ui.jsx';
+import { PageHead, PBtn, Btn, Table, Badge, FInput, FSelect, RowMenu, SavedFilters, StayBadge, stayStatus } from '../components/ui.jsx';
 import { archiveAsk } from '../components/Modal.jsx';
 import { fd, fdt, relTime } from '@shared/dates.js';
 import { REG_STATUSES, pendingExt } from '@shared/constants.js';
@@ -9,7 +9,7 @@ export default function PreReg() {
   const app = useApp(), { D, me, ui } = app;
   const q = (ui.f['pr.q'] || '').toLowerCase(), st = ui.f['pr.st'], br = ui.f['pr.br'];
   const list = D.regs().filter(r => (!st || r.status === st) && (!br || r.branchId === br) && (!q || (r.id + D.mName(r.memberId) + r.memberId).toLowerCase().includes(q))).sort((a, b) => D.lastActivity(b).localeCompare(D.lastActivity(a)) || b.id.localeCompare(a.id)); // latest activity first
-  const ed = D.canEdit('prereg');
+  const ed = D.canEdit('prereg'), tt = app.feature('tableTools');
   /* everyday actions as buttons; cancelling, archiving and deleting in the "⋯" menu */
   const acts = r => {
     const v = <Btn onClick={() => regView(app, r.id)}>View</Btn>;
@@ -32,13 +32,13 @@ export default function PreReg() {
     <div className="card">
       {app.feature('archive') ? <div className="fchips"><button type="button" className={'fchip' + (archView ? '' : ' on')} aria-pressed={!archView} onClick={() => app.setF('pr.view', '')}>Requests <b>{D.regs().length}</b></button>
         <button type="button" className={'fchip' + (archView ? ' on' : '')} aria-pressed={archView} onClick={() => app.setF('pr.view', 'archived')}>Archived <b>{D.archivedRegs().length}</b></button></div> : null}
-      <div className="filters"><FInput k="pr.q" ph="Search request, member…" /><FSelect k="pr.st" opts={REG_STATUSES} all="All statuses" />{me.role === 'coordinator' ? null : <FSelect k="pr.br" opts={D.branchOpts()} all="All branches" />}</div>
+      <div className="filters"><FInput k="pr.q" ph="Search request, member…" /><FSelect k="pr.st" opts={REG_STATUSES} all="All statuses" />{me.role === 'coordinator' ? null : <FSelect k="pr.br" opts={D.branchOpts()} all="All branches" />}{tt && !archView ? <SavedFilters page="prereg" keys={['pr.q', 'pr.st', 'pr.br']} /> : null}</div>
       {archView ? <Table rows={AR} empty="No archived requests." cols={[['Request', r => <b>{r.id}</b>], ['Member', r => <>{D.mName(r.memberId)}<br /><small>{r.memberId}</small></>], ['Status', r => <Badge s={r.status} />],
         ['Archived', r => <>{fdt(r.archived.on)}<br /><small>by {r.archived.by}{r.archived.reason ? ' — ' + r.archived.reason : ''}</small></>],
         ['', r => <span className="rowacts"><Btn onClick={() => regView(app, r.id)}>View</Btn>{ed ? <Btn cls="ok" onClick={() => app.run(() => app.api.post(`/regs/${r.id}/restore`), `${r.id} restored`)}>Restore</Btn> : null}</span>]]} /> :
-      <Table rows={list} cols={[['Last update', r => relTime(D.lastActivity(r))], ['Request', r => <><b>{r.id}</b>{r.source === 'Walk-in' ? <><br /><small>Walk-in</small></> : null}</>], ['Member', r => <>{D.mName(r.memberId)}<br /><small>{r.memberId}</small></>], ['Branch', r => D.bName(r.branchId)],
-        ['Requested stay', r => `${fd(r.arrival)} – ${fd(r.departure)}`], ['Type', r => <Badge s={r.type} />], ['Pref. dept', r => D.dName(r.prefDept)],
-        ['Status', r => <><Badge s={r.status} />{r.status === 'Rejected' && r.remarks ? <><br /><small>{r.remarks}</small></> : null}</>], ['', acts]]} />}
+      <Table rows={list} id={tt ? 'prereg' : undefined} csv={tt ? 'pre-registrations' : undefined} empty={q || st || br ? 'No requests match the filters.' : 'No requests yet.'} cols={[['Last update', r => relTime(D.lastActivity(r)), { sort: D.lastActivity }], ['Request', r => <><b>{r.id}</b>{r.source === 'Walk-in' ? <><br /><small>Walk-in</small></> : null}</>, { sort: r => r.id }], ['Member', r => <>{D.mName(r.memberId)}<br /><small>{r.memberId}</small></>, { sort: r => D.mName(r.memberId), csv: r => `${D.mName(r.memberId)} (${r.memberId})` }], ['Branch', r => D.bName(r.branchId), { sort: r => D.bName(r.branchId) }],
+        ['Requested stay', r => `${fd(r.arrival)} – ${fd(r.departure)}`, { sort: r => r.arrival, csv: r => `${r.arrival} – ${r.departure}` }], ['Type', r => <Badge s={r.type} />, { sort: r => r.type }], ['Pref. dept', r => D.dName(r.prefDept), { sort: r => D.dName(r.prefDept), hide: true }],
+        ['Status', r => <><Badge s={r.status} />{app.feature('stayBadges') && stayStatus(r) && stayStatus(r) !== 'Departed' ? <> <StayBadge r={r} /></> : null}{r.status === 'Rejected' && r.remarks ? <><br /><small>{r.remarks}</small></> : null}</>, { sort: r => r.status }], ['', acts]]} />}
     </div>
   </>;
 }

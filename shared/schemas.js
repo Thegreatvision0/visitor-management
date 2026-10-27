@@ -47,6 +47,35 @@ export const regSchema = z.object({
   memberId: req('Member'), branchId: req('Registering branch'), arrival: date('Arrival date'), departure: date('Expected departure date'), purpose: text('Purpose of visit', 3, 300)
 }).passthrough().superRefine((v, ctx) => { if (v.departure < v.arrival) ctx.addIssue({ code: 'custom', path: ['departure'], message: 'Departure date cannot be before arrival.' }); });
 
+/* optional text: checked only when filled in */
+const opt = schema => z.union([z.literal(''), schema]).optional();
+
+export const userSchema = z.object({
+  name: text('Display name', 2, 80), // may be a label such as "Coordinator – Ludhiana", so not only letters
+
+  username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/, 'Username: 3–40 characters, letters, digits, dot, dash or underscore.'),
+  password: opt(z.string().min(8, 'Password must have at least 8 characters.')), role: req('Role')
+}).passthrough();
+
+export const deptSchema = z.object({ name: text('Department name', 2, 80), supervisor: personName('Supervisor') }).passthrough();
+
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** The guest's own registration (public link). */
+export const guestSchema = z.object({
+  name: personName('Your name'), mobile: mobile('Mobile number'), email: opt(z.string().trim().email('Enter a valid email address.')),
+  organisation: opt(text('Organisation', 2, 120)), city: opt(place('City')),
+  people: z.preprocess(x => x === '' || x == null ? undefined : Number(x), // empty = 1 person
+    z.number({ invalid_type_error: 'Number of people must be a number.' }).int('Number of people must be a whole number.').min(1, 'Number of people must be between 1 and 50.').max(50, 'Number of people must be between 1 and 50.').optional()),
+  meetWith: text('Whom you are meeting', 2, 80), deptName: text('Department', 2, 80), date: date('Date'), time: z.string().regex(TIME, 'Enter the time as HH:MM.'),
+  purpose: text('Purpose of the visit', 3, 300)
+}).passthrough();
+
+/** Host's invitation: everything optional, but what is typed must be real. */
+export const inviteSchema = z.object({
+  guestName: opt(personName('Guest name')), guestMobile: opt(mobile('Guest mobile')), meetWith: opt(text('Meeting with', 2, 80)), deptName: opt(text('Department', 2, 80)),
+  date: opt(date('Date')), time: opt(z.string().regex(TIME, 'Enter the time as HH:MM.')), note: opt(text('Note', 2, 500))
+}).passthrough();
+
 /** First problem as { field, message }, or null when valid. */
 export function firstIssue(schema, values) {
   const r = schema.safeParse(values);

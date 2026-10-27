@@ -133,12 +133,14 @@ try {
   /* #13 coloured buttons, #16 attendance colour */
   await P.goto(base + '/longterm'); await P.waitForSelector('main .ph');
   if (await P.locator('main tbody tr').count()) {
-    const cls = await P.locator('main tbody tr').first().locator('.rowacts .btn').evaluateAll(bs => bs.map(x => x.className));
-    ok(cls.some(c => c.includes('a-view')) && cls.some(c => c.includes('a-ext')) && new Set(cls).size === cls.length, '#13 each action has its own colour: ' + cls.map(c => c.split(' ').pop()).join(', '));
+    /* Phase 2: one main action per row (in its action colour), the others in the ⋯ menu */
+    const cls = await P.locator('main tbody .rowacts > .btn').evaluateAll(bs => bs.map(x => x.className));
+    const perRow = await P.$$eval('main tbody tr', trs => trs.map(tr => tr.querySelectorAll('.rowacts > .btn').length));
+    ok(cls.length > 0 && cls.every(c => c.split(' ').some(x => x.startsWith('a-'))) && perRow.every(n => n <= 1), '#13 one main action per row, in its own colour: ' + [...new Set(cls.map(c => c.split(' ').pop()))].join(', '));
   }
   await P.goto(base + '/departments'); await P.waitForSelector('main .tabs'); await P.click('.tab:has-text("Assignments")');
   const att = await P.locator('main tbody td[data-label="Attendance"] .b').evaluateAll(xs => xs.map(x => [x.textContent, x.className]));
-  ok(att.length && att.every(([t, c]) => parseInt(t) < 60 ? c.includes('bad') : parseInt(t) < 75 ? c.includes('warn') : c.includes('ok')), '#16 attendance colour-coded: ' + att.slice(0, 4).map(x => x[0] + '=' + x[1].split(' ')[1]).join(' '));
+  ok(att.length && att.every(([t, c]) => parseInt(t) < 60 ? c.includes('bad') : parseInt(t) <= 80 ? c.includes('warn') : c.includes('ok')), '#16 attendance colour-coded: ' + att.slice(0, 4).map(x => x[0] + '=' + x[1].split(' ')[1]).join(' '));
   /* #17 branch buttons */
   await P.goto(base + '/branches'); await P.waitForSelector('main tbody');
   const bcls = await P.locator('main tbody tr:not(.rt-group)').first().locator('.rowacts .btn').evaluateAll(bs => bs.map(x => x.className.split(' ').pop()));
