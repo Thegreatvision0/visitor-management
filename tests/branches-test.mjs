@@ -1,0 +1,52 @@
+// Test: load the official DJJS branch list.
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { chromium } from 'playwright-core';
+const SERVER = new URL('../server/', import.meta.url).href;
+const { default: mongoose } = await import(SERVER + 'node_modules/mongoose/index.js');
+process.env.JWT_SECRET = 'test';
+const { createApp, bootstrapData } = await import(SERVER + 'src/index.js');
+const mongo = await MongoMemoryServer.create(); await mongoose.connect(mongo.getUri()); await bootstrapData();
+const srv = createApp().listen(0); const base = `http://127.0.0.1:${srv.address().port}`;
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+const login = async u => (await (await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: u, password: 'Noormahal@123' }) })).json()).token;
+const A = await login('admin'), C = await login('coord.ludhiana');
+const H = t => ({ 'content-type': 'application/json', authorization: 'Bearer ' + t });
+const snap = async t => (await fetch(base + '/api/snapshot', { headers: H(t) })).json();
+try {
+  const before = await snap(A);
+  const ludMembers = before.members.filter(m => m.branchId === 'BR003').length;
+  ok((await fetch(base + '/api/admin/import-djjs-branches', { method: 'POST', headers: H(C) })).status === 403, 'coordinator cannot load the list');
+  const r = await (await fetch(base + '/api/admin/import-djjs-branches', { method: 'POST', headers: H(A) })).json();
+  ok(r.total === 105, `105 branches on the list (created ${r.created}, updated ${r.updated})`);
+  const s = await snap(A);
+  const real = s.branches.filter(b => !b.sample);
+  ok(real.length === 105, `105 official branches in the system (${s.branches.length} incl. ${r.sampleLeft.length} leftover samples)`);
+  const lud = s.branches.find(b => b.name === 'Ludhiana');
+  ok(lud.id === 'BR003' && lud.coordinator === 'Sadhvi Kapila Bharti' && lud.email === 'in.pb.ldh@djjs.org', 'existing Ludhiana (BR003) updated in place with real details');
+  ok(s.members.filter(m => m.branchId === 'BR003').length === ludMembers, 'Ludhiana members still linked');
+  const subs = s.branches.filter(b => b.parentId === lud.id).map(b => b.name).sort();
+  ok(subs.length === 3 && subs[0].startsWith('Ludhiana –'), 'Ludhiana has 3 sub-branches: ' + subs.join(', '));
+  ok(s.branches.find(b => b.name === 'Faridabad – Surya Nagar').parentId === s.branches.find(b => b.name === 'Faridabad').id, 'Faridabad sub-branch linked');
+  ok(s.lists.states.includes('Telangana') && s.lists.states.includes('Odisha'), 'states list covers every branch state');
+  const cs = await snap(await login('coord.ludhiana'));
+  ok(cs.family.length === 4, 'Ludhiana coordinator now covers Ludhiana + 3 sub-branches');
+  const r2 = await (await fetch(base + '/api/admin/import-djjs-branches', { method: 'POST', headers: H(A) })).json();
+  ok(r2.created === 0 && r2.updated === 105 && (await snap(A)).branches.length === s.branches.length, 'running it again adds nothing (idempotent)');
+  // UI: branch view shows contact details; admin button works
+  const b = await chromium.launch({ headless: true }); const p = await (await b.newContext({ viewport: { width: 1300, height: 900 } })).newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(base + '/'); await p.fill('input[autocomplete=username]', 'admin'); await p.fill('input[type=password]', 'Noormahal@123'); await p.click('button:has-text("Sign in")'); await p.waitForSelector('#side nav');
+  await p.goto(base + '/branches'); await p.waitForSelector('main table');
+  await p.fill('main .filters input', 'Abohar'); await p.waitForTimeout(150);
+  await p.locator('main tbody tr:has-text("Abohar") button:has-text("View")').first().click(); await p.waitForSelector('.mdl');
+  const view = await p.textContent('.mdl');
+  ok(view.includes('in.pb.abh@djjs.org') && view.includes('Ganganagar Road'), 'branch view shows email and address');
+  await p.keyboard.press('Escape');
+  await p.goto(base + '/admin'); await p.waitForSelector('main .tabs');
+  await p.click('button:has-text("Load official DJJS branch list")'); await p.click('.mdl button:has-text("Load branches")');
+  await p.waitForSelector('.mdl h2:has-text("Official branches loaded")');
+  ok((await p.textContent('.mdl')).includes('105 on the official list'), 'Admin button loads the list and reports the result');
+  ok(!errs.length, 'no page errors'); await b.close();
+} catch (e) { console.error(e); fails++; }
+console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED');
+srv.close(); await mongoose.disconnect(); await mongo.stop(); process.exit(fails ? 1 : 0);

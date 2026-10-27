@@ -5,21 +5,30 @@ import { Avatar, Badge, Table, Btn, KV, Chip } from '../components/ui.jsx';
 import { fd, fdt, ageOf, today } from '@shared/dates.js';
 import { TYPES, GENDERS, stayStart, stayEnd, stayType, LIVE } from '@shared/constants.js';
 import { regNew, regView } from './regs.jsx';
+import DISTRICTS from '@shared/districts.js';
+import { personName, placeName } from '@shared/text.js';
+
+/* district suggestions for the chosen state (any other name can still be typed) */
+const STATE_KEYS = Object.keys(DISTRICTS);
+export const districtLists = () => Object.fromEntries(STATE_KEYS.map((st, i) => ['dl-dist-' + i, DISTRICTS[st]]));
+export const districtList = v => { const i = STATE_KEYS.indexOf(v.state); return i >= 0 ? 'dl-dist-' + i : undefined; };
+/** "Will be saved as …" when the clean-up changes what was typed */
+const savedAs = (x, fn) => { const c = fn(x || ''); return x && c !== String(x).trim() ? 'Will be saved as: ' + c : ''; };
 
 /* ---------- members ---------- */
 function MemberForm({ id, after }) {
   const app = useApp(), { D, me, api, mutate } = app;
   const ex = id ? D.member(id) : null, isC = me.role === 'coordinator', myB = D.branch(me.branchId) || {};
-  const fields = [{ n: 'name', l: 'Full name', req: 1 }, { n: 'mobile', l: 'Mobile number', t: 'tel', req: 1, ph: '10-digit mobile' }, { n: 'dob', l: 'Date of birth', t: 'date', req: 1 },
+  const fields = [{ n: 'name', l: 'Full name', req: 1, hint: v => savedAs(v.name, personName) }, { n: 'mobile', l: 'Mobile number', t: 'tel', req: 1, ph: '10-digit mobile' }, { n: 'dob', l: 'Date of birth', t: 'date', req: 1 },
     { n: 'gender', l: 'Gender', t: 'select', opts: GENDERS, req: 1, ph: 'Select' }, { n: 'type', l: 'Member type', t: 'select', opts: TYPES, req: 1 },
     { n: 'state', l: 'State', t: 'select', opts: D.STATES, req: 1, ph: 'Select state first' },
     { n: 'branchId', l: 'Branch / sub-branch', t: 'select', req: 1, opts: v => D.branchOpts().filter(o => !v.state || o.state === v.state),
       ph: 'Select branch', hint: v => v.state && !D.branchOpts().some(o => o.state === v.state) ? `No branch in ${v.state} yet — add it under Branches first.` : '' },
-    { n: 'district', l: 'District', req: 1 },
-    { n: 'address', l: 'Address', t: 'textarea', req: 1, full: 1 }, { n: 'emName', l: 'Emergency contact name', req: 1 }, { n: 'emPhone', l: 'Emergency contact mobile', t: 'tel', req: 1 },
+    { n: 'district', l: 'District', req: 1, list: districtList, ph: 'Type or pick from the list', hint: v => savedAs(v.district, placeName) || (districtList(v) ? `${DISTRICTS[v.state].length} districts of ${v.state} — start typing to pick one.` : '') },
+    { n: 'address', l: 'Address', t: 'textarea', req: 1, full: 1 }, { n: 'emName', l: 'Emergency contact name', req: 1, hint: v => savedAs(v.emName, personName) }, { n: 'emPhone', l: 'Emergency contact mobile', t: 'tel', req: 1 },
     { n: 'emRel', l: 'Relation', t: 'select', opts: D.RELS, ph: 'Select' }, { n: 'photo', l: 'Photo (optional)', t: 'photo', full: 1 }];
   const values = ex ? { ...ex } : { type: 'Short-Term', branchId: isC ? me.branchId : '', state: isC ? (myB.state || 'Punjab') : 'Punjab', district: isC ? (myB.district || '') : '' };
-  return <FormModal title={ex ? `Edit member — ${ex.id}` : 'Add member'} wide fields={fields} values={values}
+  return <FormModal title={ex ? `Edit member — ${ex.id}` : 'Add member'} wide fields={fields} values={values} datalists={districtLists()}
     onChange={(n, v) => { if (n === 'branchId') { const b = D.branch(v); if (b) return { state: b.state, district: b.district }; } }} /* changing state clears a branch from another state */
     buttons={[{
       label: ex ? 'Save changes' : 'Create member', run: async v => {
@@ -41,9 +50,11 @@ function MemberView({ id }) {
   const als = data.allocs.filter(a => a.memberId === id).sort((a, b) => b.from.localeCompare(a.from)), dus = data.duties.filter(x => x.memberId === id).sort((a, b) => b.from.localeCompare(a.from));
   const st = D.memberStatus(m);
   return <Modal title={<>{m.name} <small>{m.id}</small></>} wide footer={<>
-    {D.canEditMember(m) ? <><button className="btn dng" onClick={() => memberDelete(app, id)}>Delete member</button><button className="btn" onClick={() => memberEdit(app, id)}>Edit member</button></> : null}
-    {D.canEdit('prereg') ? <button className="btn pri" onClick={() => regNew(app, id)}>New pre-registration</button> : null}
+    {m.archived ? <>{D.canEditMember(m) ? <button className="btn ok" onClick={() => memberRestore(app, id)}>Restore member</button> : null}{app.me.role === 'superadmin' ? <button className="btn dng" onClick={() => memberPurge(app, id)}>Delete permanently</button> : null}</>
+      : <>{D.canEditMember(m) ? <><button className="btn dng" onClick={() => memberDelete(app, id)}>Archive member</button><button className="btn" onClick={() => memberEdit(app, id)}>Edit member</button></> : null}
+        {D.canEdit('prereg') ? <button className="btn pri" onClick={() => regNew(app, id)}>New pre-registration</button> : null}</>}
     <CloseBtn /></>}>
+    {m.archived ? <div className="alert"><span><b>Archived</b> on {fdt(m.archived.on)} by {m.archived.by}{m.archived.reason ? ' — ' + m.archived.reason : ''}. The Member ID and all history are kept; restore the member to use them again.</span></div> : null}
     <div className="who" style={{ marginBottom: 12 }}><Avatar m={m} /><div className="chips"><Badge s={m.type} />{st ? <Badge s={st} /> : null}{m.sample ? <Chip>Sample record</Chip> : null}</div></div>
     <KV items={[['Mobile', m.mobile], ['Age / DOB', `${ageOf(m.dob)} yrs · ${fd(m.dob)}`], ['Gender', m.gender], ['Branch', D.bName(m.branchId)], ['State / District', `${m.state} / ${m.district}`],
       ['Emergency contact', `${m.emName} ${m.emRel ? '(' + m.emRel + ')' : ''} · ${m.emPhone}`], ['Address', m.address, true]]} />
@@ -75,13 +86,22 @@ function MemberAttendance({ id }) {
 }
 export const memberView = (app, id) => app.openModal(<MemberView id={id} />);
 
+/* "Delete" archives: the Member ID is never reused, history is kept, and the member can be found and restored. */
 export function memberDelete(app, id) {
   const { D, data } = app, m = D.member(id); if (!m) return;
-  const rs = data.regs.filter(r => r.memberId === m.id), live = rs.find(r => LIVE.includes(r.status));
-  if (live) return app.openModal(<Info title="Cannot delete member"><p><b>{m.name}</b> has a live request ({live.id} — {live.status}). Reject or cancel it, or check the member out, first.</p></Info>);
-  if (rs.length && !D.isMgmt) return app.openModal(<Info title="Cannot delete member"><p><b>{m.name}</b> has {rs.length} past visit record(s). Only the Super Admin or Sewadar Manager can delete a member together with their history.</p></Info>);
-  confirm(app, 'Delete member', <>Permanently delete <b>{m.name}</b> ({m.id})?{rs.length ? ` Their ${rs.length} visit record(s) and all bed and sewa history are deleted too.` : ''} This cannot be undone.</>, 'Delete member',
-    () => app.run(() => app.api.del('/members/' + m.id), 'Member deleted'), true);
+  const live = data.regs.find(r => r.memberId === m.id && LIVE.includes(r.status));
+  if (live) return app.openModal(<Info title="Cannot archive member"><p><b>{m.name}</b> has a live request ({live.id} — {live.status}). Reject or cancel it, or check the member out, first.</p></Info>);
+  app.openModal(<FormModal title={`Archive member — ${m.name} (${m.id})`}
+    pre={<div className="note">The member is removed from lists and forms, but the <b>Member ID {m.id}</b> and all visit, bed and sewa history are kept. Searching {m.id} still finds the member, and it can be restored from <b>Member Master → Archived</b>.</div>}
+    fields={[{ n: 'reason', l: 'Reason (optional)', ph: 'e.g. duplicate record, left the organisation', full: 1 }]}
+    buttons={[{ label: 'Archive member', cls: 'bad', run: v => app.mutate(() => app.api.del(`/members/${m.id}?reason=${encodeURIComponent(v.reason || '')}`), `${m.name} archived — find it under Archived`) }]} />);
+}
+export const memberRestore = (app, id) => app.run(() => app.api.post(`/members/${id}/restore`), 'Member restored');
+export function memberPurge(app, id) {
+  const { D, data } = app, m = D.member(id); if (!m) return;
+  const n = data.regs.filter(r => r.memberId === m.id).length;
+  confirm(app, 'Delete permanently', <>Erase <b>{m.name}</b> ({m.id}){n ? ` and ${n} visit record(s) with their bed and sewa history` : ''} for good? This cannot be undone. The ID {m.id} will not be given to anyone else.</>, 'Delete permanently',
+    () => app.run(() => app.api.del(`/members/${m.id}?permanent=1`), 'Member permanently deleted'), true);
 }
 
 /* ---------- branches ---------- */
@@ -93,12 +113,12 @@ function BranchForm({ id, parentId }) {
   const parents = D.branchOpts().filter(o => !below.has(o.v));
   const par = parentId ? D.branch(parentId) : null;
   const values = ex ? { ...ex, parentId: ex.parentId || '' } : par ? { parentId: par.id, state: par.state, district: par.district } : { state: isC ? (D.branch(me.branchId) || {}).state : 'Punjab', parentId: isC ? me.branchId : '' };
-  return <FormModal title={ex ? `Edit branch — ${ex.name}` : par ? `Add sub-branch under ${par.name}` : 'Add branch'} values={values}
+  return <FormModal title={ex ? `Edit branch — ${ex.name}` : par ? `Add sub-branch under ${par.name}` : 'Add branch'} values={values} datalists={districtLists()}
     fields={[{ n: 'name', l: 'Branch name (must be unique)', req: 1 },
       { n: 'parentId', l: 'Parent branch', t: 'select', opts: parents, ph: isC ? undefined : '— None (main branch) —', dis: own, hidden: own,
         hint: 'Choose a parent to make this a sub-branch — for dividing a large branch into smaller ones.' },
       { n: 'state', l: 'State', t: 'select', opts: D.STATES, req: 1, ph: 'Select', dis: v => !!v.parentId, hint: v => v.parentId ? 'A sub-branch is always in its parent branch’s state.' : '' },
-      { n: 'district', l: 'District', req: 1 }, { n: 'coordinator', l: 'Coordinator name', req: 1 }, { n: 'phone', l: 'Coordinator mobile', t: 'tel', req: 1 },
+      { n: 'district', l: 'District', req: 1, list: districtList, ph: 'Type or pick from the list' }, { n: 'coordinator', l: 'Coordinator name', req: 1, hint: v => savedAs(v.coordinator, personName) }, { n: 'phone', l: 'Coordinator mobile', t: 'tel', req: 1 },
       { n: 'phones', l: 'Other phone numbers', ph: 'e.g. +91-99157-61834, 0161-2345678' }, { n: 'email', l: 'Email', t: 'email', ph: 'e.g. in.pb.ldh@djjs.org' },
       { n: 'address', l: 'Address', t: 'textarea', full: 1 }]}
     onChange={(n, v) => { if (n === 'parentId' && v) { const p = D.branch(v); if (p) return { state: p.state }; } }}
@@ -110,7 +130,7 @@ export const branchEdit = (app, id) => app.openModal(<BranchForm id={id} />);
 function BranchView({ id }) {
   const { D, data } = useApp(), b = D.branch(id);
   if (!b) return <Info title="Branch">This branch no longer exists.</Info>;
-  const ms = data.members.filter(m => m.branchId === id), rs = data.regs.filter(r => r.branchId === id).sort((a, c) => stayStart(c).localeCompare(stayStart(a)));
+  const ms = data.members.filter(m => m.branchId === id && !m.archived), rs = data.regs.filter(r => r.branchId === id).sort((a, c) => stayStart(c).localeCompare(stayStart(a)));
   return <Modal title={`${b.name} branch`} wide footer={<CloseBtn />}>
     <KV items={[['State / District', `${b.state} / ${b.district}`], ['Coordinator', `${b.coordinator} · ${b.phone}`],
       b.parentId ? ['Sub-branch of', D.bName(b.parentId)] : null,

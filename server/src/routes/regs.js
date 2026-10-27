@@ -25,6 +25,7 @@ async function saveReg(req, id) {
   const isC = u.role === 'coordinator';
   const m = v.memberId && await Member.findById(v.memberId).lean();
   if (!m) fail('Select an existing member from the list, or create a new member first.');
+  if (m.archived) fail(`${m.name} (${m._id}) is archived. Restore the member in Member Master first.`);
   const fam = isC ? await D.branchFamily(u.branchId) : null;
   if (isC && !fam.includes(m.branchId)) fail('You can only register members of your own branch and its sub-branches.');
   const branchId = isC ? (fam.includes(v.branchId) ? v.branchId : m.branchId) : v.branchId;
@@ -50,13 +51,13 @@ async function saveReg(req, id) {
   await reg.save();
   await log(u, `${reg._id} ${reg.status} (${m.name})`);
   if (reg.status === 'Submitted') await notifyApprovers(u, reg, m.name, walk ? 'Walk-in' : 'New request');
-  if (auto) await notify(u, { text: `Walk-in ${m.name} (${reg._id}) approved — expected ${fd(reg.arrival)}`, page: 'reception', level: 'e', regId: reg._id, branchId: reg.branchId });
+  if (auto) await notify(u, { text: `Walk-in ${m.name} (${reg._id}) approved — expected ${fd(reg.arrival)}`, page: 'reception', kind: 'arrive', level: 'e', regId: reg._id, branchId: reg.branchId });
   return { id: reg._id, status: reg.status, type: reg.type };
 }
 /** Tell everyone who can approve that a request is waiting. */
 async function notifyApprovers(u, g, name, what) {
   const b = await Branch.findById(g.branchId).lean();
-  await notify(u, { text: `${what} ${g._id} — ${name} (${b ? b.name : '?'}), ${fd(g.arrival)} – ${fd(g.departure)}, awaiting approval`, page: 'approvals', level: 'e', regId: g._id, branchId: g.branchId });
+  await notify(u, { text: `${what} ${g._id} — ${name} (${b ? b.name : '?'}), ${fd(g.arrival)} – ${fd(g.departure)}, awaiting approval`, page: 'approvals', kind: 'approve', level: 'e', regId: g._id, branchId: g.branchId });
 }
 /** Tell the coordinators of the request's branch about a decision. */
 const notifyBranch = (u, g, text) => notify(u, { text, page: 'prereg', roles: ['coordinator'], regId: g._id, branchId: g.branchId });
@@ -96,7 +97,7 @@ r.post('/:id/extension-request', need(['prereg', 'longterm']), loadReg, async (r
   hist(req.user, g, `Extension requested to ${fd(v.to)} — ${v.reason}`); await g.save();
   const name = await D.memberName(g.memberId), b = await Branch.findById(g.branchId).lean();
   await log(req.user, `Extension requested: ${name}`);
-  await notify(req.user, { text: `Extension request: ${name} (${b ? b.name : '?'}) to ${fd(v.to)} — by ${req.user.name}`, page: 'approvals', level: 'e', regId: g._id, branchId: g.branchId });
+  await notify(req.user, { text: `Extension request: ${name} (${b ? b.name : '?'}) to ${fd(v.to)} — by ${req.user.name}`, page: 'approvals', kind: 'ext', level: 'e', regId: g._id, branchId: g.branchId });
   ok(res);
 });
 
@@ -117,7 +118,7 @@ r.post('/:id/approve', need('approvals'), loadReg, async (req, res) => {
   await g.save(); await log(req.user, `${g._id} Approved`);
   const name = await D.memberName(g.memberId);
   await notifyBranch(req.user, g, `Approved: ${g._id} — ${name}, ${fd(v.from)} – ${fd(v.to)} (${v.type})`);
-  await notify(req.user, { text: `${name} (${g._id}) approved — expected ${fd(v.from)}`, page: 'reception', level: 'e', regId: g._id, branchId: g.branchId });
+  await notify(req.user, { text: `${name} (${g._id}) approved — expected ${fd(v.from)}`, page: 'reception', kind: 'arrive', level: 'e', regId: g._id, branchId: g.branchId });
   ok(res);
 });
 r.post('/:id/reject', need('approvals'), loadReg, async (req, res) => {

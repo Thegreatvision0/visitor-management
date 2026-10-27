@@ -1,0 +1,14 @@
+{
+  "name": "noormahal-tests",
+  "private": true,
+  "type": "module",
+  "description": "API and browser tests. Run all: npm test (from this folder) or npm test at the project root.",
+  "scripts": {
+    "test": "node run.mjs",
+    "browsers": "npx playwright-core install chromium-headless-shell"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.4.3",
+    "playwright-core": "^1.49.1"
+  }
+}

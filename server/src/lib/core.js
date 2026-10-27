@@ -68,6 +68,7 @@ export function serialWrites(req, res, next) {
   } else if (counts) res.on('finish', () => { if (res.statusCode < 400) rev++; });
   const run = chain.then(() => new Promise(resolve => {
     res.on('finish', resolve); res.on('close', resolve);
+    setTimeout(resolve, 30000).unref(); // a stuck request never holds up every later save for more than 30 s
     next();
   }));
   chain = run.catch(() => {});

@@ -10,6 +10,8 @@ import { buildSample } from '../services/sample.js';
 import { importDjjsBranches } from '../services/branches-import.js';
 import { ROLE_DEFAULTS, PAGE_KEYS, resolveRoles, VISIT_CAP_KEYS, VISIT_CAPS_DEFAULT, resolveVisitCaps } from '../../../shared/constants.js';
 import { sameName, today } from '../../../shared/dates.js';
+import { personName, cleanText } from '../../../shared/text.js';
+import { normalizeAll } from '../services/data.js';
 
 const r = Router();
 r.use(superOnly);
@@ -18,6 +20,7 @@ const ok = res => res.json({ ok: true });
 /* ---------- users ---------- */
 async function saveUser(req, id) {
   const v = body(req, ['name', 'username', 'password', 'role', 'branchId', 'deptId', 'deptName']);
+  v.name = personName(v.name); v.deptName = cleanText(v.deptName);
   /* department may be typed: an existing one (any capitals) is used, a new name is created when the user is saved */
   let newDept = '';
   if (v.deptName) {
@@ -124,6 +127,7 @@ r.get('/export', async (req, res) => {
   res.json(await exportAll());
 });
 r.post('/import', async (req, res) => { await replaceAll(req.body); await log(req.user, 'Backup imported'); ok(res); });
+r.post('/normalize', async (req, res) => { const n = await normalizeAll(); await log(req.user, `Data clean-up: ${n.total} record(s) tidied`); res.json(n); });
 r.post('/import-djjs-branches', async (req, res) => res.json(await importDjjsBranches(req.user)));
 r.post('/reset-sample', async (req, res) => { await replaceAll(buildSample()); await log(req.user, 'Reset to sample data'); ok(res); });
 r.post('/clear-people', async (req, res) => {

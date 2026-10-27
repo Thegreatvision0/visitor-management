@@ -4,7 +4,7 @@ import { PageHead, PBtn, Btn, Table, Tabs, useTab, Chip, FInput, FSelect } from 
 import { fdt } from '@shared/dates.js';
 import { VISIT_CAPS } from '@shared/constants.js';
 import { NAV } from '../components/Layout.jsx';
-import { userAdd, userEdit, userDelete, listAdd, listDel, shiftEdit, setPerm, permReset, admClearPeople, admClearAll, admReset, admExport, admImport, admImportBranches, setVisitCap, visitCapsReset } from '../modals/admin.jsx';
+import { userAdd, userEdit, userDelete, listAdd, listDel, shiftEdit, setPerm, permReset, admClearPeople, admClearAll, admReset, admExport, admImport, admImportBranches, admNormalize, setVisitCap, visitCapsReset } from '../modals/admin.jsx';
 
 export default function Admin() {
   const app = useApp(), { data } = app, tab = useTab('admin', 'd');
@@ -17,7 +17,7 @@ export default function Admin() {
 
 function DataTab() {
   const app = useApp(), { data } = app, file = useRef(null);
-  const n = [['Members', data.members.length], ['Requests', data.regs.length], ['Branches', data.branches.length], ['Departments', data.depts.length], ['Beds', data.beds.length], ['Allocations', data.allocs.length], ['Duties', data.duties.length], ['Attendance marks', Object.keys(data.att).length]];
+  const n = [['Members', data.members.filter(m => !m.archived).length], ['Archived members', data.members.filter(m => m.archived).length], ['Requests', data.regs.length], ['Branches', data.branches.length], ['Departments', data.depts.length], ['Beds', data.beds.length], ['Allocations', data.allocs.length], ['Duties', data.duties.length], ['Attendance marks', Object.keys(data.att).length]];
   return <div className="grid g2">
     <div><h3>Data</h3><div className="kv">{n.map(([k, v]) => <div key={k}><span>{k}</span>{v}</div>)}</div>
       <div className="acts"><button className="btn" onClick={() => admExport(app)}>Download JSON backup</button><button className="btn" onClick={() => file.current.click()}>Import JSON</button></div>
@@ -25,6 +25,8 @@ function DataTab() {
       <p className="muted">Import also accepts a backup downloaded from the old browser-only prototype.</p></div>
     <div><h3>Official DJJS branches</h3><p className="muted" style={{ marginTop: 0 }}>Adds every branch listed on djjs.org/contact (name, state, coordinator, phones, email, address) and updates branches with the same name. Members and visits stay linked. Safe to run again.</p>
       <div className="acts"><button className="btn pri" onClick={() => admImportBranches(app)}>Load official DJJS branch list</button></div></div>
+    <div><h3>Data clean-up</h3><p className="muted" style={{ marginTop: 0 }}>Fix spacing and capital letters in names already saved (e.g. "SukhwinderSingh" → "Sukhwinder Singh", "gurpreet  KAUR" → "Gurpreet Kaur"). Safe to run again.</p>
+      <div className="acts"><button className="btn" onClick={() => admNormalize(app)}>Clean up names</button></div></div>
     <div><h3>Start fresh / reset</h3><p className="muted" style={{ marginTop: 0 }}>Remove the sample records and enter your own by hand — everything can also be added, edited and deleted one by one in its own page.</p>
       <div className="acts"><button className="btn dng" onClick={() => admClearPeople(app)}>Delete all members &amp; visits</button><button className="btn dng" onClick={() => admClearAll(app)}>Delete everything (empty system)</button><button className="btn dng" onClick={() => admReset(app)}>Reset to sample data</button></div></div>
   </div>;

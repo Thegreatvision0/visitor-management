@@ -1,7 +1,7 @@
 /* Modal dialogs and the generic form modal used by every add / edit screen. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context.jsx';
-import { normOpts } from './ui.jsx';
+import { normOpts, PwInput } from './ui.jsx';
 import { isMobile } from '@shared/constants.js';
 
 export function Modal({ title, wide, children, footer }) {
@@ -35,7 +35,7 @@ const val = (x, v) => typeof x === 'function' ? x(v) : x;
 /**
  * Generic form modal.
  * fields: [{ n, l, t: text|tel|date|number|datetime-local|select|textarea|photo, opts (array or fn(values)), req, ph, full,
- *            hint (node or fn(values)), ro, dis, list, hidden (bool or fn(values)) }]
+ *            hint (node or fn(values)), ro, dis, list (datalist id or fn(values)), hidden (bool or fn(values)) }]
  * buttons: [{ label, cls, run(values) → Promise<error string | null> }]
  * onChange(name, value, values) may return extra values to merge (cascading selects, auto-fill).
  */
@@ -49,7 +49,7 @@ export function FormModal({ title, wide, pre, fields, values: init = {}, buttons
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const errRef = useRef(null);
-  const F = fields.map(f => ({ ...f, opts: f.t === 'select' ? normOpts(val(f.opts, vals)) : f.t === 'checks' ? val(f.opts, vals) : null, hidden: val(f.hidden, vals), hint: val(f.hint, vals), dis: val(f.dis, vals) }));
+  const F = fields.map(f => ({ ...f, opts: f.t === 'select' ? normOpts(val(f.opts, vals)) : f.t === 'checks' ? val(f.opts, vals) : null, hidden: val(f.hidden, vals), hint: val(f.hint, vals), dis: val(f.dis, vals), list: val(f.list, vals) }));
 
   /* a select whose value is no longer offered (e.g. after a parent changed) is cleared;
      a select without a placeholder holds its first option, as the browser shows it */
@@ -112,6 +112,7 @@ function Field({ f, v, set }) {
   let inp;
   if (f.t === 'select') inp = <select {...common} disabled={f.dis}>{f.ph != null ? <option value="">{f.ph}</option> : null}{f.opts.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}</select>;
   else if (f.t === 'textarea') inp = <textarea {...common} rows={2} placeholder={f.ph || ''} />;
+  else if (f.t === 'password') inp = <PwInput {...common} placeholder={f.ph || ''} autoComplete="new-password" />;
   else inp = <input {...common} type={f.t || 'text'} placeholder={f.ph || ''} list={f.list} readOnly={f.ro} />;
   return (
     <label className={'fld' + (f.full ? ' full' : '')}>

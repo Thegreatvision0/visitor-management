@@ -1,6 +1,7 @@
 import { useApp } from '../context.jsx';
 import { PageHead, Btn, Table, Badge, Tabs, useTab, FInput, FSelect, Chip } from '../components/ui.jsx';
 import { fd } from '@shared/dates.js';
+import { natCmp } from '@shared/text.js';
 import { stayStart, stayEnd, stayType } from '@shared/constants.js';
 import { bedOpen, bedAssign, bedTransfer, bedExtend, bedRelease, bedClean, structAdd, structEdit, structDelete } from '../modals/beds.jsx';
 
@@ -28,11 +29,11 @@ export default function Accommodation() {
   if (tab === 'w') b = <Table rows={waiting} empty="Everyone approved has a bed." cols={[
     ['Member', r => <><b>{D.mName(r.memberId)}</b><br /><small>{r.memberId} · {(D.member(r.memberId) || {}).gender}</small></>], ['Stay', r => `${fd(stayStart(r))} – ${fd(stayEnd(r))}`], ['Status', r => <Badge s={r.status} />], ['Type', r => <Badge s={stayType(r)} />],
     ['', r => ed ? <Btn cls="pri" onClick={() => bedAssign(app, r.id)}>Assign bed</Btn> : null]]} />;
-  if (tab === 'r') b = <Table rows={res.slice().sort((a, c) => pathOf(a).localeCompare(pathOf(c)))} empty="No allocations." cols={[
+  if (tab === 'r') b = <Table rows={res.slice().sort((a, c) => natCmp(pathOf(a), pathOf(c)))} empty="No allocations." cols={[
     ['Member', r => <><b>{D.mName(r.memberId)}</b><br /><small>{r.memberId}</small></>], ['Site › Building › Floor › Room › Bed', pathOf], ['Allocated', r => `${fd(D.activeAlloc(r.id).from)} – ${fd(D.activeAlloc(r.id).to)}`],
     ['Status', r => <Badge s={r.status === 'Checked In' ? 'Occupied' : 'Reserved'} />],
     ['', r => ed ? <><Btn onClick={() => bedTransfer(app, r.id)}>Transfer</Btn><Btn onClick={() => bedExtend(app, r.id)}>Extend</Btn><Btn onClick={() => bedRelease(app, r.id)}>Unassign bed</Btn></> : null]]} />;
-  if (tab === 'c') b = <Table rows={clean} empty="No beds waiting for cleaning." cols={[['Bed', x => D.bedPath(x)], ['', x => ed ? <Btn cls="ok" onClick={() => bedClean(app, x.id)}>Mark cleaned</Btn> : null]]} />;
+  if (tab === 'c') b = <Table rows={clean.slice().sort((x, y) => natCmp(D.bedPath(x), D.bedPath(y)))} empty="No beds waiting for cleaning." cols={[['Bed', x => D.bedPath(x)], ['', x => ed ? <Btn cls="ok" onClick={() => bedClean(app, x.id)}>Mark cleaned</Btn> : null]]} />;
   if (tab === 's') b = <Structure ed={ed} />;
   return <>
     <PageHead title="Accommodation & Bed Management" sub="Site → Building → Floor → Room → Bed. A bed can never be assigned to two people for overlapping dates.">
@@ -51,8 +52,8 @@ function Board({ st }) {
     const floors = [];
     b.floors.forEach(fl => {
       const rooms = [];
-      data.rooms.filter(r => r.buildingId === b.id && r.floor === fl).forEach(rm => {
-        const beds = data.beds.filter(x => x.roomId === rm.id);
+      D.roomsIn(b.id, fl).forEach(rm => { // natural order: V001, V002 … · Bed A, B, C …
+        const beds = D.bedsIn(rm.id);
         const shown = beds.filter(x => { const s2 = st.get(x.id); return (!fst || s2.status === fst) && (!q || (s2.member && (s2.member.name + s2.member.id).toLowerCase().includes(q))); });
         if (!shown.length) return;
         const occ = beds.filter(x => st.get(x.id).status === 'Occupied').length;
@@ -82,13 +83,13 @@ function Structure({ ed }) {
       {ed ? <><button type="button" title="Rename bed" aria-label={'Rename bed ' + x.label} onClick={() => structEdit(app, 'bed', x.id)}>✎</button><button type="button" title="Delete bed" aria-label={'Delete bed ' + x.label} onClick={() => structDelete(app, 'bed', x.id)}>×</button></> : null}</span>;
   };
   const Room = ({ rm }) => {
-    const bs = data.beds.filter(x => x.roomId === rm.id);
+    const bs = D.bedsIn(rm.id);
     return <><div className="trow"><b>{rm.name}</b><Chip>Room · {rm.gender}</Chip><Sum bids={bs.map(x => x.id)} />
       {ed ? <span className="tacts"><B label="+ Bed" on={() => structAdd(app, 'bed', rm.id)} /><B label="Edit" on={() => structEdit(app, 'room', rm.id)} /><B label="Delete" cls="dng" on={() => structDelete(app, 'room', rm.id)} /></span> : null}</div>
       <div className="bchips">{bs.length ? bs.map(x => <BedChip key={x.id} x={x} />) : <span className="muted">No beds yet — use “+ Bed”.</span>}</div></>;
   };
   const Floor = ({ b, fl }) => {
-    const fk = 'f:' + b.id + '|' + fl, fr = data.rooms.filter(r => r.buildingId === b.id && r.floor === fl);
+    const fk = 'f:' + b.id + '|' + fl, fr = D.roomsIn(b.id, fl);
     return <div className="tnode"><div className="trow"><Tg k={fk} /><b>{fl} Floor</b><Chip>Floor</Chip><Sum bids={bedsIn(fr.map(r => r.id))} />
       {ed ? <span className="tacts"><B label="+ Room" on={() => structAdd(app, 'room', b.id, fl)} /><B label="Rename" on={() => structEdit(app, 'floor', b.id, fl)} /><B label="Delete" cls="dng" on={() => structDelete(app, 'floor', b.id, fl)} /></span> : null}</div>
       {closed[fk] ? null : <div className="kids">{fr.length ? fr.map(rm => <Room key={rm.id} rm={rm} />) : <div className="muted" style={{ padding: '6px 8px' }}>No rooms on this floor yet — use “+ Room”.</div>}</div>}</div>;

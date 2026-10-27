@@ -24,8 +24,8 @@ export default function Branches() {
     rows.push(<tr key={b.id}>
       <td data-label="Branch" className="rt-title" style={{ paddingLeft: 10 + depth * 24 }}>{depth ? <span className="muted">└ </span> : null}<b>{b.name}</b>{subs.length ? <> <Chip>{subs.length} sub-branch{subs.length > 1 ? 'es' : ''}</Chip></> : null}{depth ? <><br /><small>Sub-branch of {D.branch(b.parentId).name}</small></> : null}</td>
       <td data-label="District">{b.district}</td><td data-label="Coordinator">{b.coordinator}<br /><small>{b.phone}</small></td>
-      <td data-label="Members">{data.members.filter(m => m.branchId === b.id).length}</td><td data-label="Open requests">{count(b.id, r => ['Submitted', 'Approved'].includes(r.status))}</td><td data-label="Residing now">{count(b.id, r => r.status === 'Checked In')}</td>
-      <td data-label=""><Btn onClick={() => branchView(app, b.id)}>View</Btn>{ed ? <><Btn onClick={() => branchAdd(app, b.id)}>+ Sub-branch</Btn><Btn onClick={() => branchEdit(app, b.id)}>Edit</Btn></> : null}{canDel(b) ? <Btn cls="dng" onClick={() => branchDelete(app, b.id)}>Delete</Btn> : null}</td>
+      <td data-label="Members">{data.members.filter(m => m.branchId === b.id && !m.archived).length}</td><td data-label="Open requests">{count(b.id, r => ['Submitted', 'Approved'].includes(r.status))}</td><td data-label="Residing now">{count(b.id, r => r.status === 'Checked In')}</td>
+      <td data-label=""><span className="rowacts"><Btn cls="a-view" onClick={() => branchView(app, b.id)}>View</Btn>{ed ? <><Btn cls="a-move" onClick={() => branchAdd(app, b.id)}>+ Sub-branch</Btn><Btn cls="a-edit" onClick={() => branchEdit(app, b.id)}>Edit</Btn></> : null}{canDel(b) ? <Btn cls="a-out" onClick={() => branchDelete(app, b.id)}>Delete</Btn> : null}</span></td>
     </tr>);
     subs.forEach(s => add(s, depth + 1));
   };

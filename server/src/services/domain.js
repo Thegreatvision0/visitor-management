@@ -122,8 +122,8 @@ export async function checkIn(user, regId, dt) {
   hist(user, r, `Arrival confirmed at reception (${fdt(dt)})`); await r.save();
   const name = await memberName(r.memberId);
   await log(user, `Check-in: ${name}`);
-  if (!(await activeAlloc(regId))) await notify(user, { text: `${name} has arrived and needs a bed`, page: 'accommodation', level: 'e', regId, branchId: r.branchId });
-  if (!(await activeDuty(regId))) await notify(user, { text: `${name} has arrived — assign a sewa department`, page: 'departments', level: 'e', roles: ['superadmin', 'manager'], regId, branchId: r.branchId });
+  if (!(await activeAlloc(regId))) await notify(user, { text: `${name} has arrived and needs a bed`, page: 'accommodation', kind: 'bed', level: 'e', regId, branchId: r.branchId });
+  if (!(await activeDuty(regId))) await notify(user, { text: `${name} has arrived — assign a sewa department`, page: 'departments', kind: 'duty', level: 'e', roles: ['superadmin', 'manager'], regId, branchId: r.branchId });
 }
 
 export async function checkOut(user, regId, dt) {
@@ -139,7 +139,7 @@ export async function checkOut(user, regId, dt) {
   hist(user, r, `Checked out (${fdt(dt)})${al ? ' — bed marked for cleaning' : ''}`); await r.save();
   const name = await memberName(r.memberId);
   await log(user, `Check-out: ${name}`);
-  if (al) await notify(user, { text: `${name} checked out — ${await bedShort(al.bedId)} needs cleaning`, page: 'accommodation', level: 'e', regId, branchId: r.branchId });
+  if (al) await notify(user, { text: `${name} checked out — ${await bedShort(al.bedId)} needs cleaning`, page: 'accommodation', kind: 'clean', level: 'e', regId, branchId: r.branchId });
   await notify(user, { text: `${name} (${r._id}) has checked out`, page: 'prereg', roles: ['coordinator'], regId, branchId: r.branchId });
 }
 

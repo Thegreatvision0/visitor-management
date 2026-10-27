@@ -1,6 +1,7 @@
 import { useApp } from '../context.jsx';
-import { PageHead, PBtn, Btn, Table, Badge, Tabs, useTab, FInput, FSelect } from '../components/ui.jsx';
-import { fd, today } from '@shared/dates.js';
+import { PageHead, PBtn, Btn, Table, Badge, Tabs, useTab, FInput, FSelect, AttPct } from '../components/ui.jsx';
+import { fd, fdt, today } from '@shared/dates.js';
+import { stayEnd } from '@shared/constants.js';
 import { ATT } from '@shared/constants.js';
 import { memberView } from '../modals/members.jsx';
 import { dutyAssign, dutyChange, dutyExtend, dutyEnd, dutyDelete, deptAdd, deptEdit, deptDelete, setAtt, attAll } from '../modals/duties.jsx';
@@ -27,7 +28,7 @@ export default function Departments() {
         {D.canEdit('departments') ? <div style={{ marginBottom: 10 }} className="acts">{un.map(r => <Btn key={r.id} cls="pri" onClick={() => dutyAssign(app, r.id)}>Assign: {D.mName(r.memberId)}</Btn>)}</div> : null}</> : null}
       <div className="filters"><FInput k="du.q" ph="Search member…" /><FSelect k="du.dp" opts={D.deptOpts()} all="All departments" /><FSelect k="du.sh" opts={D.SHIFTS} all="All shifts" /></div>
       <Table rows={L} empty="No active assignments." cols={[['Member', who], ['Department', d => D.dName(d.deptId)], ['Supervisor', d => d.supervisor], ['Shift', d => D.shiftLbl(d.shift)],
-        ['Duty period', d => <>{fd(d.from)} – {fd(d.to)}{d.to < t ? <> <span className="b bad">ended {fd(d.to)}</span></> : null}</>], ['Status', d => <Badge s={d.status} />], ['', d => D.canDept(d.deptId) ? <><Btn onClick={() => dutyChange(app, d.regId)}>Change</Btn><Btn cls={d.to < t ? 'pri' : ''} onClick={() => dutyExtend(app, d.regId)}>Extend</Btn><Btn onClick={() => dutyEnd(app, d.regId)}>End</Btn></> : null]]} />
+        ['Duty period', d => <>{fd(d.from)} – {fd(d.to)}{d.to < t ? <> <span className="b bad">ended {fd(d.to)}</span></> : null}</>], ['Attendance', d => <AttPct pct={D.attPct(d.regId)} />, { sort: d => D.attPct(d.regId) == null ? -1 : D.attPct(d.regId) }], ['Status', d => <Badge s={d.status} />], ['', d => D.canDept(d.deptId) ? <><Btn onClick={() => dutyChange(app, d.regId)}>Change</Btn><Btn cls={d.to < t ? 'pri' : ''} onClick={() => dutyExtend(app, d.regId)}>Extend</Btn><Btn onClick={() => dutyEnd(app, d.regId)}>End</Btn></> : null]]} />
     </>;
   }
   if (tab === 't') {
@@ -42,11 +43,15 @@ export default function Departments() {
         ['Attendance', d => editable(d) ? <select className="in" value={D.attStatus(date, d.regId)} onChange={e => setAtt(app, date, d.regId, e.target.value)}>{ATT.map(a => <option key={a}>{a}</option>)}</select> : <Badge s={D.attStatus(date, d.regId)} />]]} />
     </>;
   }
+  if (tab === 'u') b = <Table rows={un.slice().sort((a, c) => (a.status === 'Checked In' ? 0 : 1) - (c.status === 'Checked In' ? 0 : 1) || String(a.actualIn || '').localeCompare(String(c.actualIn || '')))} empty="Every resident has a sewa assignment." cols={[
+    ['Member', r => <><button type="button" className="linkb" onClick={() => memberView(app, r.memberId)}>{D.mName(r.memberId)}</button><br /><small>{r.memberId} · {D.bName(r.branchId)}</small></>],
+    ['Status', r => <Badge s={r.status === 'Checked In' ? 'Resident' : 'Expected'} />], ['Arrived', r => r.actualIn ? fdt(r.actualIn) : '—'], ['Stay until', r => fd(stayEnd(r))], ['Preferred department', r => D.dName(r.approvedDept || r.prefDept)],
+    ['', r => D.canEdit('departments') ? <Btn cls="pri" onClick={() => dutyAssign(app, r.id)}>Assign sewa</Btn> : null]]} />;
   if (tab === 'h') b = <Table rows={data.duties.filter(d => D.reg(d.regId) && mine(d)).sort((a, c) => c.from.localeCompare(a.from)).slice(0, 120)} empty="No history." cols={[
     ['Member', d => D.mName(d.memberId)], ['Department', d => D.dName(d.deptId)], ['Shift', d => d.shift], ['Supervisor', d => d.supervisor], ['From', d => fd(d.from)], ['To', d => fd(d.to)], ['Status', d => <Badge s={d.status} />],
     ['', d => D.canDept(d.deptId) ? <Btn cls="dng" onClick={() => dutyDelete(app, d.id)}>Delete</Btn> : null]]} />;
   return <>
     <PageHead title="Sewa Department Management" sub="Assign sewadar to departments and shifts, record attendance, and keep full duty history.">{manage ? <PBtn onClick={() => deptAdd(app)}>+ Add department</PBtn> : null}</PageHead>
-    <div className="card"><Tabs page="departments" list={[['o', 'Overview'], ['a', 'Assignments', data.duties.filter(d => d.status === 'Active' && D.reg(d.regId)).length], ['t', 'Attendance'], ['h', 'Duty history']]} />{b}</div>
+    <div className="card"><Tabs page="departments" list={[['o', 'Overview'], ['a', 'Assignments', data.duties.filter(d => d.status === 'Active' && D.reg(d.regId)).length], ...(sup ? [] : [['u', 'Without sewa', un.length]]), ['t', 'Attendance'], ['h', 'Duty history']]} />{b}</div>
   </>;
 }

@@ -10,3 +10,7 @@ client/dist/
 .vercel
 deploy/backups/
 deploy/logs/
+
+# test tooling and output
+tests/.browsers/
+tests/output/

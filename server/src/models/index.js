@@ -15,7 +15,8 @@ const Branch = model('Branch', new Schema({
 const Member = model('Member', new Schema({
   _id: S, name: S, photo: S, mobile: { type: String, index: true }, dob: S, gender: S, address: S,
   state: S, district: S, branchId: { type: String, index: true }, type: S,
-  emName: S, emPhone: S, emRel: S, createdOn: S, sample: Boolean
+  emName: S, emPhone: S, emRel: S, createdOn: S, sample: Boolean,
+  archived: { type: new Schema({ on: S, by: S, reason: S }, { _id: false }), default: undefined } // set instead of deleting: ID and history are kept
 }, opts));
 
 const History = new Schema({ at: S, by: S, text: S }, { _id: false });
@@ -97,6 +98,7 @@ const GuestVisit = model('GuestVisit', new Schema({
 const notifSchema = new Schema({
   at: { type: String, index: true }, text: S, page: S, level: S, roles: [String],
   userId: S, branchId: S, deptId: S, regId: S, byUser: S, readBy: { type: [String], default: [] },
+  kind: S, // the task it asks for (approve, ext, arrive, bed, duty, clean, v-incharge, v-office, v-gate): hidden once done
   cap: S // guest visit permission the reader must hold (e.g. 'office', 'gate', 'incharge')
 }, opts);
 const Notification = model('Notification', notifSchema);

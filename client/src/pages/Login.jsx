@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context.jsx';
+import { PwInput } from '../components/ui.jsx';
 
 export default function Login() {
   const { login } = useApp();
@@ -15,7 +16,7 @@ export default function Login() {
         <h1>DJJS Nurmahal</h1>
         <p className="lg-sub" style={{ margin: '2px 0 18px' }}><b>Sewadar &amp; Accommodation Management System</b></p>
         <label className="fld" style={{ marginBottom: 12 }}><span>Username</span><input className="in" autoFocus autoComplete="username" value={u} onChange={e => setU(e.target.value)} /></label>
-        <label className="fld" style={{ marginBottom: 14 }}><span>Password</span><input className="in" type="password" autoComplete="current-password" value={p} onChange={e => setP(e.target.value)} /></label>
+        <label className="fld" style={{ marginBottom: 14 }}><span>Password</span><PwInput className="in" autoComplete="current-password" value={p} onChange={e => setP(e.target.value)} /></label>
         {err ? <div className="err" style={{ marginBottom: 12 }}>{err}</div> : null}
         <button className="btn pri" style={{ width: '100%' }} disabled={busy || !u || !p}>{busy ? 'Signing in…' : 'Sign in'}</button>
       </form>
@@ -41,9 +42,9 @@ export function ChoosePassword() {
         <img className="lg-logo" src="/djjs-logo.png" alt="Divya Jyoti Jagrati Sansthan logo" />
         <h1>Choose a new password</h1>
         <p className="lg-sub muted" style={{ margin: '4px 0 18px' }}>Hello {me.name}. Your current password is temporary — set your own to continue.</p>
-        <label className="fld" style={{ marginBottom: 12 }}><span>Current (temporary) password</span><input className="in" type="password" autoComplete="current-password" autoFocus value={cur} onChange={e => setCur(e.target.value)} /></label>
-        <label className="fld" style={{ marginBottom: 12 }}><span>New password (at least 8 characters)</span><input className="in" type="password" autoComplete="new-password" value={p1} onChange={e => setP1(e.target.value)} /></label>
-        <label className="fld" style={{ marginBottom: 14 }}><span>Repeat new password</span><input className="in" type="password" autoComplete="new-password" value={p2} onChange={e => setP2(e.target.value)} /></label>
+        <label className="fld" style={{ marginBottom: 12 }}><span>Current (temporary) password</span><PwInput className="in" autoComplete="current-password" autoFocus value={cur} onChange={e => setCur(e.target.value)} /></label>
+        <label className="fld" style={{ marginBottom: 12 }}><span>New password (at least 8 characters)</span><PwInput className="in" autoComplete="new-password" value={p1} onChange={e => setP1(e.target.value)} /></label>
+        <label className="fld" style={{ marginBottom: 14 }}><span>Repeat new password</span><PwInput className="in" autoComplete="new-password" value={p2} onChange={e => setP2(e.target.value)} /></label>
         {err ? <div className="err" style={{ marginBottom: 12 }}>{err}</div> : null}
         <button className="btn pri" style={{ width: '100%' }} disabled={busy || !cur || !p1 || !p2}>{busy ? 'Saving…' : 'Save and continue'}</button>
         <button type="button" className="btn" style={{ width: '100%', marginTop: 8 }} onClick={logout}>Sign out</button>

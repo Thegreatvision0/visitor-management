@@ -1,12 +1,13 @@
 /* Members and branches. */
 import { Router } from 'express';
 import { Member, Branch, Registration, Settings } from '../models/index.js';
-import { need, isMgmt } from '../middleware/auth.js';
+import { need } from '../middleware/auth.js';
 import { nid, log, fail, notFound, forbidden, getSettings } from '../lib/core.js';
 import { body, check, oneOf, isDate } from '../lib/validate.js';
 import { deleteMember, deleteBranch, branchFamily } from '../services/domain.js';
-import { today } from '../../../shared/dates.js';
-import { TYPES, GENDERS } from '../../../shared/constants.js';
+import { today, nowLocal } from '../../../shared/dates.js';
+import { TYPES, GENDERS, LIVE } from '../../../shared/constants.js';
+import { personName, placeName, cleanText } from '../../../shared/text.js';
 
 const r = Router();
 
@@ -14,6 +15,8 @@ const r = Router();
 const MEMBER_FIELDS = ['name', 'mobile', 'dob', 'gender', 'branchId', 'type', 'state', 'district', 'address', 'emName', 'emPhone', 'emRel', 'photo'];
 async function saveMember(req, id) {
   const v = body(req, MEMBER_FIELDS), u = req.user;
+  /* data hygiene: names in proper case with single spaces, placeholders such as "null" dropped */
+  Object.assign(v, { name: personName(v.name), emName: personName(v.emName), district: placeName(v.district), address: cleanText(v.address), mobile: String(v.mobile).replace(/\D/g, '').slice(-10), emPhone: String(v.emPhone).replace(/\D/g, '').slice(-10) });
   check(v, [['name', 'Full name', 'req'], ['mobile', 'Mobile number', 'req tel'], ['dob', 'Date of birth', 'req'], ['gender', 'Gender', 'req'], ['branchId', 'Branch', 'req'],
     ['type', 'Member type', 'req'], ['state', 'State', 'req'], ['district', 'District', 'req'], ['address', 'Address', 'req'], ['emName', 'Emergency contact name', 'req'], ['emPhone', 'Emergency contact mobile', 'req tel']]);
   isDate(v.dob, 'Date of birth'); oneOf(v.gender, GENDERS, 'gender'); oneOf(v.type, TYPES, 'member type');
@@ -26,10 +29,12 @@ async function saveMember(req, id) {
     const fam = await branchFamily(u.branchId);
     if (!fam.includes(v.branchId) || (ex && !fam.includes(ex.branchId))) forbidden('You can only manage members of your own branch and its sub-branches.');
   }
+  if (ex && ex.archived) fail(`${ex.name} (${ex._id}) is archived. Restore the member first.`);
+  const arch = d => d.archived ? ' It is archived — open it from Member Master → Archived and restore it instead of creating a new member.' : '';
   const dup = await Member.findOne({ _id: { $ne: id || null }, mobile: v.mobile }).lean();
-  if (dup) fail(`A member with this mobile number already exists (${dup._id}). One permanent Member ID per person — use the existing record.`);
+  if (dup) fail(`A member with this mobile number already exists (${dup._id}, ${dup.name}). One permanent Member ID per person — use the existing record.${arch(dup)}`);
   const dup2 = (await Member.find({ _id: { $ne: id || null }, dob: v.dob }).lean()).find(m => m.name.toLowerCase() === v.name.toLowerCase());
-  if (dup2) fail(`A member with the same name and date of birth already exists (${dup2._id}).`);
+  if (dup2) fail(`A member with the same name and date of birth already exists (${dup2._id}).${arch(dup2)}`);
   const m = ex || new Member({ _id: await nid('mem'), createdOn: today() });
   Object.assign(m, { ...v, photo: v.photo || null });
   await m.save();
@@ -38,13 +43,37 @@ async function saveMember(req, id) {
 }
 r.post('/members', need('members'), async (req, res) => res.json({ id: await saveMember(req, null) }));
 r.put('/members/:id', need('members'), async (req, res) => res.json({ id: await saveMember(req, req.params.id) }));
-r.delete('/members/:id', need('members'), async (req, res) => {
-  const m = await Member.findById(req.params.id).lean(); if (!m) notFound('Member');
+/* "Delete" archives the member: the Member ID, visits, bed and sewa history are kept, the ID is never reused,
+   and the member can be found (Member Master → Archived, or by searching the ID) and restored.
+   ?permanent=1 (Super Admin only, archived members only) erases the member and their history for good. */
+async function memberInScope(req) {
+  const m = await Member.findById(req.params.id); if (!m) notFound('Member');
   if (req.user.role === 'coordinator' && !(await branchFamily(req.user.branchId)).includes(m.branchId)) forbidden('You can only manage members of your own branch and its sub-branches.');
-  const n = await Registration.countDocuments({ memberId: m._id });
-  if (n && !isMgmt(req.user) && !(await Registration.exists({ memberId: m._id, status: { $in: ['Submitted', 'Approved', 'Checked In'] } })))
-    fail(`${m.name} has ${n} past visit record(s). Only the Super Admin or Sewadar Manager can delete a member together with their history.`);
-  await deleteMember(req.user, m._id);
+  return m;
+}
+r.delete('/members/:id', need('members'), async (req, res) => {
+  const m = await memberInScope(req);
+  if (req.query.permanent === '1') {
+    if (req.user.role !== 'superadmin') forbidden('Only the Super Admin can permanently delete a member.');
+    if (!m.archived) fail('Archive the member first; only archived members can be deleted permanently.');
+    await deleteMember(req.user, m._id);
+    return res.json({ ok: true });
+  }
+  const live = await Registration.findOne({ memberId: m._id, status: { $in: LIVE } }).lean();
+  if (live) fail(`${m.name} has a live request (${live._id}, ${live.status}). Reject or cancel it, or check the member out, first.`);
+  const why = cleanText((req.body || {}).reason || req.query.reason || '');
+  m.archived = { on: nowLocal(), by: req.user.name, reason: why };
+  await m.save();
+  await log(req.user, `Archived member ${m._id} (${m.name})${why ? ' — ' + why : ''}`);
+  res.json({ ok: true });
+});
+r.post('/members/:id/restore', need('members'), async (req, res) => {
+  const m = await memberInScope(req);
+  if (!m.archived) fail('This member is not archived.');
+  const dup = await Member.findOne({ _id: { $ne: m._id }, mobile: m.mobile, archived: null }).lean();
+  if (dup) fail(`Another active member already uses mobile ${m.mobile} (${dup._id}, ${dup.name}). Change that record first.`);
+  m.archived = undefined; await m.save();
+  await log(req.user, `Restored member ${m._id} (${m.name})`);
   res.json({ ok: true });
 });
 
@@ -52,7 +81,7 @@ r.delete('/members/:id', need('members'), async (req, res) => {
 const normName = s => String(s).trim().replace(/\s+/g, ' ').toLowerCase();
 async function saveBranch(req, id) {
   const u = req.user, v = body(req, ['name', 'state', 'district', 'coordinator', 'phone', 'parentId', 'address', 'email', 'phones']);
-  v.name = v.name.replace(/\s+/g, ' ');
+  Object.assign(v, { name: cleanText(v.name), district: placeName(v.district), coordinator: personName(v.coordinator), address: cleanText(v.address), phones: cleanText(v.phones), email: cleanText(v.email).toLowerCase() });
   let b = id ? await Branch.findById(id) : null;
   if (id && !b) notFound('Branch');
   /* coordinators: only sub-branches under their own branch family, and edits within it */

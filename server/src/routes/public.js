@@ -8,6 +8,7 @@ import { clientIp, rateLimited } from '../lib/security.js';
 import { today, fd } from '../../../shared/dates.js';
 import { PARKINGS, VEHICLE_TYPES, vehicleNo, isMobile } from '../../../shared/constants.js';
 import * as V from '../services/visits.js';
+import { personName, placeName, cleanText } from '../../../shared/text.js';
 
 const r = Router();
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -38,6 +39,7 @@ r.post('/visits/:token', async (req, res) => {
   const g = await byToken(req.params.token);
   if (!['Invited', 'Submitted'].includes(g.status)) fail('Your appointment is already being processed. Please contact your host for changes.');
   const v = body(req, ['name', 'mobile', 'email', 'organisation', 'city', 'people', 'purpose', 'meetWith', 'deptId', 'deptName', 'date', 'time', 'vehicleType', 'vehicleNumber', 'parking']);
+  Object.assign(v, { name: personName(v.name), meetWith: personName(v.meetWith), organisation: cleanText(v.organisation), city: placeName(v.city), deptName: cleanText(v.deptName) });
   /* a vehicle is coming when a type other than 'No vehicle' is chosen (older clients send hasVehicle) */
   const hv = (req.body || {}).hasVehicle, hasVehicle = hv !== undefined ? !!hv : !!v.vehicleType && v.vehicleType !== 'No vehicle';
   if (g.lockMeeting) { v.meetWith = g.meetWith; v.deptName = g.deptName; v.deptId = g.deptId; } // fixed by the inviting department head

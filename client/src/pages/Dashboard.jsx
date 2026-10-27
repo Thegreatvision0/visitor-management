@@ -56,14 +56,14 @@ export default function Dashboard() {
 
   /* attention list */
   const al = [];
-  if (overdue.length) al.push(['bad', `${overdue.length} overdue stay(s): ${overdue.slice(0, 3).map(r => D.mName(r.memberId)).join(', ')}${overdue.length > 3 ? '…' : ''}`, () => openTab('reception', 'd')]);
+  if (overdue.length) al.push(['bad', `${overdue.length} overdue stay(s): ${overdue.slice(0, 3).map(r => D.mName(r.memberId)).join(', ')}${overdue.length > 3 ? '…' : ''}`, () => D.can('reception') ? openTab('reception', 'd', { 'rc.q': '' }) : openTab('longterm', null, { 'lt.f': 'od' })]);
   const ex = R.filter(r => r.status === 'Checked In' && ['Monthly', 'Long-Term'].includes(stayType(r)) && diffDays(t, stayEnd(r)) >= 0 && diffDays(t, stayEnd(r)) <= 7);
-  if (ex.length) al.push(['', `${ex.length} monthly/long-term stay(s) expiring within 7 days`, () => go('longterm')]);
+  if (ex.length && D.can('longterm')) al.push(['', `${ex.length} monthly/long-term stay(s) expiring within 7 days`, () => openTab('longterm', null, { 'lt.f': 'soon' })]);
   if (showBeds) {
     const nb = R.filter(r => ['Approved', 'Checked In'].includes(r.status) && !D.activeAlloc(r.id)).length; if (nb) al.push(['info', `${nb} approved member(s) waiting for a bed`, () => openTab('accommodation', 'w')]);
     if (c.Cleaning) al.push(['info', `${c.Cleaning} bed(s) pending cleaning`, () => openTab('accommodation', 'c')]);
   }
-  if (D.can('departments') && noDuty) al.push(['info', `${noDuty} resident(s) without sewa assignment`, () => openTab('departments', 'a')]);
+  if (D.can('departments') && noDuty) al.push(['info', `${noDuty} resident(s) without sewa assignment`, () => openTab('departments', 'u')]);
 
   const Kpi = ({ label, value, sub, icon, onClick, hero }) => {
     const Tag = onClick ? 'button' : 'div';

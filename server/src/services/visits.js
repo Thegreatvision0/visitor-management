@@ -87,14 +87,14 @@ export async function stayText(v) {
 
 /* ---- notifications: they follow the guest visit permissions, so they reach whoever holds the step ---- */
 export const toHost = (by, v, text) => notify(by, { text, page: 'visitors', userId: v.hostId, regId: v._id });
-export const toIncharge = (by, v, text) => notify(by, { text, page: 'visitors', cap: 'incharge', deptId: v.deptId, regId: v._id });
-export const toOffice = (by, v, text) => notify(by, { text, page: 'visitors', cap: 'office', regId: v._id });
+export const toIncharge = (by, v, text, kind = '') => notify(by, { text, page: 'visitors', kind, cap: 'incharge', deptId: v.deptId, regId: v._id });
+export const toOffice = (by, v, text) => notify(by, { text, page: 'visitors', kind: 'v-office', cap: 'office', regId: v._id });
 export const toAccommodation = (by, v, text) => notify(by, { text, page: 'accommodation', level: 'e', regId: v._id });
 /** Notify the department in-charge — or, when the typed department is unknown, management (the host is told separately). */
-export const toDecider = (by, v, text) => v.deptId ? toIncharge(by, v, text) : notify(by, { text: text + ' (department not in the list — host / management to accept)', page: 'visitors', level: 'e', roles: ['superadmin', 'manager'], regId: v._id });
+export const toDecider = (by, v, text) => v.deptId ? toIncharge(by, v, text, 'v-incharge') : notify(by, { text: text + ' (department not in the list — host / management to accept)', page: 'visitors', kind: 'v-incharge', level: 'e', roles: ['superadmin', 'manager'], regId: v._id });
 export async function toSecurity(by, v, prefix = 'Expected') {
   const text = `${prefix}: ${v.guest.name} — ${vehicleText(v)}${v.parking ? ' → ' + v.parking + ' parking' : ''}, ${when(v)}, meeting ${meetingText(v, await deptLabel(v))}${v.golfCart ? ' · golf car' : ''}`;
-  await notify(by, { text, page: 'visitors', cap: 'gate', regId: v._id });
+  await notify(by, { text, page: 'visitors', kind: prefix === 'Expected' ? 'v-gate' : '', cap: 'gate', regId: v._id });
 }
 /** Throws unless the user may act at this step. */
 export function must(ok, msg) { if (!ok) forbidden(msg); }

@@ -6,6 +6,7 @@ import { defaultLists, resolveRoles, resolveVisitCaps, STATES_DEF, OFFICES_DEF }
 import { scopeRegIds } from './domain.js';
 import { branchFamily, notificationsFor } from './notify.js';
 import { DEMO_USERS } from './sample.js';
+import { personName, placeName, cleanText } from '../../../shared/text.js';
 
 const strip = list => list.map(out);
 const toDocs = list => (list || []).map(({ id, ...rest }) => ({ _id: id, ...rest }));
@@ -20,25 +21,27 @@ export async function snapshot(user) {
   if (user.role === 'coordinator') members = await Member.find({ $or: [{ branchId: { $in: await branchFamily(user.branchId) } }, { _id: { $in: regs.map(r => r.memberId) } }] }).lean();
   else if (user.role === 'supervisor') members = await Member.find({ _id: { $in: regs.map(r => r.memberId) } }).lean();
   else members = await Member.find().lean();
-  const [allocs, duties, att, branches, depts, sites, buildings, rooms, beds] = await Promise.all([
+  /* independent queries run together: on a hosted database every round trip costs time */
+  const showLog = !['coordinator', 'supervisor'].includes(user.role);
+  const [allocs, duties, att, branches, depts, sites, buildings, rooms, beds, s, logRows, userRows, family, visits, notifications, rev] = await Promise.all([
     Allocation.find(byReg).lean(), Duty.find(byReg).lean(), Attendance.find(byReg).lean(),
     Branch.find().lean(), Department.find().lean(),
-    DATA_MODELS.sites.find().lean(), DATA_MODELS.buildings.find().lean(), DATA_MODELS.rooms.find().lean(), DATA_MODELS.beds.find().lean()
+    DATA_MODELS.sites.find().lean(), DATA_MODELS.buildings.find().lean(), DATA_MODELS.rooms.find().lean(), DATA_MODELS.beds.find().lean(),
+    getSettings(),
+    showLog ? AuditLog.find().sort({ at: -1, _id: -1 }).limit(user.role === 'superadmin' ? 200 : 8).lean() : [],
+    user.role === 'superadmin' ? User.find().lean() : [],
+    user.role === 'coordinator' ? branchFamily(user.branchId) : null,
+    visitsFor(user), notificationsFor(user), getRev()
   ]);
-  const s = await getSettings();
-  const showLog = !['coordinator', 'supervisor'].includes(user.role);
-  const log = showLog ? (await AuditLog.find().sort({ at: -1, _id: -1 }).limit(user.role === 'superadmin' ? 200 : 8).lean()).map(({ _id, ...l }) => l) : [];
-  const users = user.role === 'superadmin' ? (await User.find().lean()).map(publicUser) : [];
   return {
     regs: strip(regs), members: strip(members), allocs: strip(allocs), duties: strip(duties), att: attMap(att),
     branches: strip(branches), depts: strip(depts), sites: strip(sites), buildings: strip(buildings), rooms: strip(rooms), beds: strip(beds),
-    lists: s.lists, tomb: s.tomb || {}, roles: resolveRoles(s.perms), log, users,
+    lists: s.lists, tomb: s.tomb || {}, roles: resolveRoles(s.perms), log: logRows.map(({ _id, ...l }) => l), users: userRows.map(publicUser),
     myPages: user.pages, vcaps: user.vcaps || [], // this user's effective page access and guest visit permissions
     visitCaps: user.role === 'superadmin' ? resolveVisitCaps(s.visitCaps) : undefined,
-    family: user.role === 'coordinator' ? await branchFamily(user.branchId) : null,
-    visits: await visitsFor(user),
+    family, visits,
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/+$/, ''), // address guests use for registration links
-    notifications: await notificationsFor(user), rev: await getRev()
+    notifications, rev
   };
 }
 
@@ -110,6 +113,23 @@ export async function ensureDemoUsers() {
   }
   await syncCounters();
   return true;
+}
+
+/** One-off clean-up of existing records (Admin → Data clean-up): the same rules new entries get when saved. */
+export async function normalizeAll() {
+  const n = { members: 0, branches: 0, users: 0, departments: 0 };
+  const tidy = async (Model, key, fields) => {
+    for (const d of await Model.find()) {
+      let ch = false;
+      for (const [f, fn] of fields) { if (d[f] == null) continue; const x = fn(d[f]); if (x !== d[f]) { d[f] = x; ch = true; } }
+      if (ch) { await d.save(); n[key]++; }
+    }
+  };
+  await tidy(Member, 'members', [['name', personName], ['emName', personName], ['district', placeName], ['address', cleanText]]);
+  await tidy(Branch, 'branches', [['name', cleanText], ['district', placeName], ['coordinator', personName], ['address', cleanText]]);
+  await tidy(User, 'users', [['name', personName]]);
+  await tidy(Department, 'departments', [['name', cleanText], ['supervisor', personName]]);
+  return { ...n, total: n.members + n.branches + n.users + n.departments };
 }
 
 export const isEmpty = async () => !(await Member.exists({})) && !(await Branch.exists({})) && !(await DATA_MODELS.beds.exists({}));

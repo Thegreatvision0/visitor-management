@@ -21,8 +21,8 @@ function BedModal({ regId, presetBed, mode }) {
     { n: 'site', l: 'Site', t: 'select', ph: 'Select site', req: 1, opts: v => data.sites.map(s => ({ v: s.id, l: `${s.name} (${cnt(v, b => (D.bldg(rmOf(b).buildingId) || {}).siteId === s.id)} free)` })) },
     { n: 'bld', l: 'Building', t: 'select', ph: 'Select building', req: 1, opts: v => data.buildings.filter(b => b.siteId === v.site).map(b => ({ v: b.id, l: `${b.name} (${cnt(v, x => rmOf(x).buildingId === b.id)} free)` })) },
     { n: 'floor', l: 'Floor', t: 'select', ph: 'Select floor', req: 1, opts: v => { const b = D.bldg(v.bld); return b ? b.floors.map(f => ({ v: f, l: `${f} Floor (${cnt(v, x => rmOf(x).buildingId === b.id && rmOf(x).floor === f)} free)` })) : []; } },
-    { n: 'room', l: 'Room', t: 'select', ph: 'Select room', req: 1, opts: v => data.rooms.filter(x => x.buildingId === v.bld && x.floor === v.floor).map(x => ({ v: x.id, l: `${x.name} · ${x.gender} (${cnt(v, b => b.roomId === x.id)} free)` })) },
-    { n: 'bed', l: 'Bed (free for these dates)', t: 'select', ph: 'Select bed', req: 1, full: 1, opts: v => data.beds.filter(b => b.roomId === v.room && free(b, v)).map(b => ({ v: b.id, l: 'Bed ' + b.label })),
+    { n: 'room', l: 'Room', t: 'select', ph: 'Select room', req: 1, opts: v => D.roomsIn(v.bld, v.floor).map(x => ({ v: x.id, l: `${x.name} · ${x.gender} (${cnt(v, b => b.roomId === x.id)} free)` })) },
+    { n: 'bed', l: 'Bed (free for these dates)', t: 'select', ph: 'Select bed', req: 1, full: 1, opts: v => D.bedsIn(v.room).filter(b => free(b, v)).map(b => ({ v: b.id, l: 'Bed ' + b.label })),
       hint: v => { const rm = D.room(v.room); return rm && rm.gender !== 'Any' && rm.gender !== m.gender ? `⚠ This room is marked ${rm.gender}; member is ${m.gender}.` : ''; } }];
   const reset = { site: { bld: '', floor: '', room: '', bed: '' }, bld: { floor: '', room: '', bed: '' }, floor: { room: '', bed: '' }, room: { bed: '' } };
   return <FormModal title={`${transfer ? 'Transfer' : 'Assign'} bed — ${m.name}`} wide values={values} fields={fields} onChange={n => reset[n]}

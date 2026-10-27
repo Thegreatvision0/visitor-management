@@ -112,6 +112,15 @@ export const admImportBranches = app => confirm(app, 'Load official DJJS branch 
       {r.sampleLeft.length ? <p className="muted">{r.sampleLeft.length} sample branch(es) that are not on the official list are still in the system: {r.sampleLeft.join(', ')}. Delete them from the Branches page (or with Admin → Data → Delete everything) when you go live.</p> : null}</Info>);
   });
 
+/** Tidy names already saved: proper case, single spaces, missing spaces ("SukhwinderSingh"), placeholders like "null". */
+export const admNormalize = app => confirm(app, 'Clean up names',
+  <>Tidy every member, branch, user and department name already in the system — capital first letters, single spaces, a missing space added ("SukhwinderSingh" → "Sukhwinder Singh"), and values such as "null" or "N/A" removed? New entries are already cleaned when they are saved.</>, 'Clean up',
+  async () => {
+    let r;
+    const e = await app.run(async () => { r = await app.api.post('/admin/normalize'); }, null);
+    if (!e) app.openModal(<Info title="Names cleaned up"><p>{r.total ? <><b>{r.total}</b> record(s) tidied: {r.members} member(s), {r.branches} branch(es), {r.users} user(s), {r.departments} department(s).</> : 'Everything was already tidy — nothing changed.'}</p></Info>);
+  });
+
 /* guest visit permissions per role */
 export const setVisitCap = (app, role, cap, on) => app.run(() => app.api.put('/admin/visit-caps', { role, cap, on }), 'Guest visit access updated');
 export const visitCapsReset = app => confirm(app, 'Reset guest visit access', 'Restore every role to its default guest visit permissions? Extra permissions given to individual users are kept.', 'Reset', () => app.run(() => app.api.post('/admin/visit-caps/reset'), 'Guest visit access reset'));

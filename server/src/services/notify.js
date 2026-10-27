@@ -38,7 +38,7 @@ export async function notificationsFor(user, limit = 40) {
       if (ok && user.role === 'coordinator') ok = !!n.branchId && fam.includes(n.branchId);
       if (ok && user.role === 'supervisor') ok = !!n.deptId && n.deptId === user.deptId;
     }
-    if (ok) out.push({ id: String(n._id), at: n.at, text: n.text, page: n.page, regId: n.regId || '', read: (n.readBy || []).includes(user.id) });
+    if (ok) out.push({ id: String(n._id), at: n.at, text: n.text, page: n.page, regId: n.regId || '', kind: n.kind || '', read: (n.readBy || []).includes(user.id) });
     if (out.length >= limit) break;
   }
   return out;

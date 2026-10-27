@@ -2,6 +2,7 @@
    All writes go through the API, which re-checks every rule. */
 import { overlaps, dayOf } from '@shared/dates.js';
 import { stayStart, stayEnd, LIVE } from '@shared/constants.js';
+import { natCmp } from '@shared/text.js';
 
 /** Performance rating from % present. */
 export const perfRating = pct => pct == null ? '—' : pct >= 90 ? 'Excellent' : pct >= 75 ? 'Good' : pct >= 50 ? 'Average' : 'Poor';
@@ -38,7 +39,10 @@ export function makeDomain(data, me) {
   const isMgmt = ['superadmin', 'manager'].includes(me.role);
 
   const regs = () => data.regs;
-  const members = () => me.role === 'coordinator' ? data.members.filter(m => family.has(m.branchId)) : data.members;
+  /* archived members ("deleted") keep their ID and history; they are left out of every list except Member Master → Archived */
+  const allMembers = () => me.role === 'coordinator' ? data.members.filter(m => family.has(m.branchId)) : data.members;
+  const members = () => allMembers().filter(m => !m.archived);
+  const archivedMembers = () => allMembers().filter(m => m.archived);
 
   /* Bed status: Cleaning > Occupied (checked-in allocation) > Reserved (approved, not yet in) > Available */
   let bs = null;
@@ -58,6 +62,8 @@ export function makeDomain(data, me) {
   };
   const conflicts = (bedId, from, to, ignore) => data.allocs.filter(a => a.active && a.bedId === bedId && a.id !== ignore && overlaps(a.from, a.to, from, to));
   const memberStatus = m => { for (const s of ['Checked In', 'Approved', 'Submitted']) { if (data.regs.some(r => r.memberId === m.id && r.status === s)) return s === 'Checked In' ? 'Resident' : s; } return ''; };
+  /** Member Master status: Resident (checked in now), Departed (has left after a stay), Not arrived (never stayed / not yet arrived). */
+  const residency = m => { const rs = data.regs.filter(r => r.memberId === m.id); return rs.some(r => r.status === 'Checked In') ? 'Resident' : rs.some(r => r.status === 'Checked Out') ? 'Departed' : 'Not arrived'; };
   const liveReg = mid => data.regs.find(r => r.memberId === mid && LIVE.includes(r.status));
 
   /* sewa & attendance */
@@ -83,7 +89,10 @@ export function makeDomain(data, me) {
 
   /* options */
   const branchOpts = () => data.branches.filter(b => inScope(b.id)).map(b => ({ v: b.id, l: branchLabel(b.id), state: b.state })).sort((a, b) => a.l.localeCompare(b.l));
-  const deptOpts = () => data.depts.filter(x => x.active).map(x => ({ v: x.id, l: x.name }));
+  const deptOpts = () => data.depts.filter(x => x.active).map(x => ({ v: x.id, l: x.name })).sort((a, b) => natCmp(a.l, b.l));
+  /* rooms and beds in natural order: V001, V002 … V010; Bed A, B, C … */
+  const roomsIn = (buildingId, floor) => data.rooms.filter(r => r.buildingId === buildingId && (floor == null || r.floor === floor)).sort((a, b) => natCmp(a.name, b.name));
+  const bedsIn = roomId => data.beds.filter(b => b.roomId === roomId).sort((a, b) => natCmp(a.label, b.label));
   const L = data.lists, STATES = L.states, RELS = L.rels, SHIFTS = L.shifts.map(x => x.name);
   const SHIFT_LBL = {}; L.shifts.forEach(x => { SHIFT_LBL[x.name] = x.time ? `${x.name} (${x.time})` : x.name; });
   const shiftLbl = x => SHIFT_LBL[x] || x;
@@ -91,7 +100,7 @@ export function makeDomain(data, me) {
   return {
     data, me, role, roles: data.roles, member, reg, branch, dept, bedO, room, bldg, site, bName, dName, mName,
     activeAlloc, activeDuty, bedShort, bedPath, allocBedText, can, canEdit, hasCap, vcaps, canDept, canEditMember, isMgmt, family, inScope,
-    regs, members, bedStates, conflicts, memberStatus, liveReg, dutyOn, attStatus, attPct, onSite, memberAtt, submittedAt, lastActivity, branchLabel,
+    regs, members, allMembers, archivedMembers, residency, roomsIn, bedsIn, bedStates, conflicts, memberStatus, liveReg, dutyOn, attStatus, attPct, onSite, memberAtt, submittedAt, lastActivity, branchLabel,
     branchOpts, deptOpts, STATES, RELS, SHIFTS, shiftLbl, stayStart, stayEnd
   };
 }

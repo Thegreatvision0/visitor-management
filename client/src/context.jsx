@@ -27,9 +27,10 @@ export function AppProvider({ children }) {
 
   const reload = useCallback(async () => { setData(await api.get('/snapshot')); }, []);
   const loadSession = useCallback(async () => {
-    const u = await api.get('/auth/me');
+    /* both requests at once — one network round trip less when signing in */
+    const [u, d] = await Promise.all([api.get('/auth/me'), api.get('/snapshot').catch(e => e)]);
     if (u.mustChangePassword) { setMe(u); setData(null); return; } // temporary password: choose a new one first
-    const d = await api.get('/snapshot');
+    if (d instanceof Error) throw d;
     setMe(u); setData(d);
   }, []);
   const logout = useCallback(() => {
