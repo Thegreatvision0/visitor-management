@@ -2,6 +2,7 @@ import { useApp } from '../context.jsx';
 import { PageHead, Btn, Table, Badge, Tabs, useTab, FInput, FSelect, Chip } from '../components/ui.jsx';
 import { fd } from '@shared/dates.js';
 import { natCmp } from '@shared/text.js';
+import { counts, COUNT_HELP } from '../lib/counts.jsx';
 import { stayStart, stayEnd, stayType } from '@shared/constants.js';
 import { bedOpen, bedAssign, bedTransfer, bedExtend, bedRelease, bedClean, structAdd, structEdit, structDelete } from '../modals/beds.jsx';
 
@@ -15,9 +16,9 @@ export default function Accommodation() {
   const pathOf = r => D.bedPath(D.bedO(D.activeAlloc(r.id).bedId));
   let b = null;
   if (tab === 'b') {
-    const c = { Available: 0, Occupied: 0, Reserved: 0, Cleaning: 0 }; st.forEach(s => c[s.status]++);
+    const c = counts(D).beds; // same numbers as the Dashboard
     b = <>
-      <div className="legend">{STATUSES.map(k => <span key={k}><i className={'dot c-' + k} />{k} <b>{c[k]}</b></span>)}</div>
+      <div className="legend">{STATUSES.map(k => <span key={k} title={COUNT_HELP[k.toLowerCase()]}><i className={'dot c-' + k} />{k} <b>{c[k]}</b></span>)}</div>
       <div className="filters">
         <FSelect k="acc.site" opts={data.sites.map(s => ({ v: s.id, l: s.name }))} all="All sites" onPick={() => setF('acc.bld', '')} />
         <FSelect k="acc.bld" opts={data.buildings.filter(x => !app.ui.f['acc.site'] || x.siteId === app.ui.f['acc.site']).map(x => ({ v: x.id, l: x.name }))} all="All buildings" />

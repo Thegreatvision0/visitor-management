@@ -66,6 +66,7 @@ Step 'Installing packages and building the web app'
 Push-Location $Root
 try {
   npm install --no-audit --no-fund; if ($LASTEXITCODE) { throw 'npm install failed' }
+  npm install --prefix shared --omit=dev --no-audit --no-fund; if ($LASTEXITCODE) { throw 'shared install failed' }
   npm install --prefix server --omit=dev --no-audit --no-fund; if ($LASTEXITCODE) { throw 'server install failed' }
   npm install --prefix client --no-audit --no-fund; if ($LASTEXITCODE) { throw 'client install failed' }
   npm run build; if ($LASTEXITCODE) { throw 'build failed' }

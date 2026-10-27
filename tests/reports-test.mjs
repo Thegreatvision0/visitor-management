@@ -11,7 +11,7 @@ const srv = createApp().listen(0); const base = `http://127.0.0.1:${srv.address(
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const tok = (await (await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'admin', password: 'Noormahal@123' }) })).json()).token;
 const H = { 'content-type': 'application/json', authorization: 'Bearer ' + tok };
-await fetch(base + '/api/branches', { method: 'POST', headers: H, body: JSON.stringify({ name: 'Ludhiana East', parentId: 'BR003', district: 'Ludhiana', coordinator: 'X', phone: '9876500001', state: 'Punjab' }) });
+await fetch(base + '/api/branches', { method: 'POST', headers: H, body: JSON.stringify({ name: 'Ludhiana East', parentId: 'BR003', district: 'Ludhiana', coordinator: 'Ravi Kumar', phone: '9876500001', state: 'Punjab' }) });
 const S = await (await fetch(base + '/api/snapshot', { headers: H })).json();
 const pad = n => String(n).padStart(2, '0');
 const td = new Date(), iso = x => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`, today = iso(td);

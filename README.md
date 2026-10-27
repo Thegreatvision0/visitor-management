@@ -101,6 +101,35 @@ Set a strong `JWT_SECRET`, put the server behind HTTPS, and set `SEED_ON_EMPTY=f
 
 In the old HTML prototype, open **Admin & Prototype → Download JSON backup**. In this app, open **Admin → Data → Import JSON** and choose that file. The format is the same, so backups made here can also be re-imported. Importing replaces all sewadar data and keeps the sign-in users.
 
+## DEMO mode, feature switches and tests
+
+**DEMO mode** — set `DEMO_MODE=true` (server `.env`, or Vercel environment variables). The app then uses its own
+database `noormahal_demo` (change with `DEMO_DB_NAME`), fills it with sample members, branches, requests, beds,
+guest visits and attendance, shows an orange **DEMO** ribbon, adds the accounts `mainoffice` and `gate`, and allows
+Admin → Data → *Reset* / *Delete everything* (typing DELETE plus a second confirmation). Production data is never touched.
+
+**Feature switches** — every new feature can be turned off without code changes. Defaults and descriptions are in
+`shared/features.js`; override them with `FEATURES=name=on,name=off` (e.g. `FEATURES=maskMobiles=off`).
+The current switches are visible at `/api/meta`.
+
+| Switch | Default | What it does |
+|---|---|---|
+| dangerZone | off (on in DEMO) | Admin → Data reset / delete-everything tools |
+| archive | on | Archive / restore branches, departments, requests (members are always archived, never erased) |
+| kpiHelp | on | ⓘ definitions on Dashboard / Reception / Accommodation counts |
+| bedLock | on | Database lock so one bed can never be booked twice for overlapping dates |
+| stayRules | on | Stay-type day limits in Admin → Lists & options; manual override flagged on approval |
+| arrivalNeedsBed | on | Reception "Confirm arrival" asks for a free bed (right gender, right dates) when none is assigned |
+| duplicateMobile | on | Member form warns while typing if the mobile is already used |
+| maskMobiles | on | 98XXXXX280 for roles without "See mobile numbers" (Admin → Roles & access); Reveal is audit-logged |
+
+**Data migrations** run automatically at start-up (`server/src/migrations/index.js`); each runs once and is recorded
+in the `migrations` collection. They only add or fill fields.
+
+**Tests** — `npm test` (project root) runs every suite in `tests/` (API and browser tests, each on a temporary
+in-memory database). Build the client first (`npm run build`). First time on a new PC: `npm install --prefix tests`
+and `npm run browsers --prefix tests`.
+
 ## How it works
 
 - **Reads:** after sign-in, the browser loads `GET /api/snapshot`, which holds everything that user may see. A coordinator gets only their branch, and a supervisor only their department. Dashboard, lists, the bed board and reports are computed from it in the browser, as in the prototype.

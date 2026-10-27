@@ -4,7 +4,8 @@ import { PageHead, PBtn, Btn, Table, Tabs, useTab, Chip, FInput, FSelect } from 
 import { fdt } from '@shared/dates.js';
 import { VISIT_CAPS } from '@shared/constants.js';
 import { NAV } from '../components/Layout.jsx';
-import { userAdd, userEdit, userDelete, listAdd, listDel, shiftEdit, setPerm, permReset, admClearPeople, admClearAll, admReset, admExport, admImport, admImportBranches, admNormalize, setVisitCap, visitCapsReset } from '../modals/admin.jsx';
+import { userAdd, userEdit, userDelete, listAdd, listDel, shiftEdit, setPerm, permReset, admClearPeople, admClearAll, admReset, admExport, admImport, admImportBranches, admNormalize, stayRulesEdit, setVisitCap, visitCapsReset } from '../modals/admin.jsx';
+import { EXTRA_PERMS } from '@shared/constants.js';
 
 export default function Admin() {
   const app = useApp(), { data } = app, tab = useTab('admin', 'd');
@@ -27,8 +28,9 @@ function DataTab() {
       <div className="acts"><button className="btn pri" onClick={() => admImportBranches(app)}>Load official DJJS branch list</button></div></div>
     <div><h3>Data clean-up</h3><p className="muted" style={{ marginTop: 0 }}>Fix spacing and capital letters in names already saved (e.g. "SukhwinderSingh" → "Sukhwinder Singh", "gurpreet  KAUR" → "Gurpreet Kaur"). Safe to run again.</p>
       <div className="acts"><button className="btn" onClick={() => admNormalize(app)}>Clean up names</button></div></div>
-    <div><h3>Start fresh / reset</h3><p className="muted" style={{ marginTop: 0 }}>Remove the sample records and enter your own by hand — everything can also be added, edited and deleted one by one in its own page.</p>
+    {app.feature('dangerZone') ? <div><h3>Start fresh / reset <span className="b bad">Danger zone</span></h3><p className="muted" style={{ marginTop: 0 }}>Remove the sample records and enter your own by hand — everything can also be added, edited and deleted one by one in its own page.</p>
       <div className="acts"><button className="btn dng" onClick={() => admClearPeople(app)}>Delete all members &amp; visits</button><button className="btn dng" onClick={() => admClearAll(app)}>Delete everything (empty system)</button><button className="btn dng" onClick={() => admReset(app)}>Reset to sample data</button></div></div>
+      : <div><h3>Start fresh / reset</h3><p className="muted" style={{ marginTop: 0 }}>Deleting everything or resetting to sample data is switched off on the live system. Records can be archived one by one on their own pages. (Available in DEMO mode.)</p></div>}
   </div>;
 }
 
@@ -61,7 +63,11 @@ function RolesTab() {
         const v = D.roles[r].pages[p[0]] || '', lock = p[0] === 'dashboard';
         return <td key={r}><select className="in" value={v} disabled={lock} onChange={e => setPerm(app, r, p[0], e.target.value)}>
           {[{ v: '', l: '—' }, { v: 'v', l: 'View' }, { v: 'e', l: 'Edit' }].filter(o => !lock || o.v).map(o => <option key={o.v} value={o.v}>{o.l}</option>)}</select></td>;
-      })}</tr>)}</tbody></table></div>
+      })}</tr>)}
+        {EXTRA_PERMS.map(([k, l]) => <tr key={k} className="perm-extra"><td><b>{l}</b><br /><small>{k === 'mobiles' ? 'Without it, numbers show as 98XXXXX280 with a logged "Reveal".' : ''}</small></td>{roles.map(r => {
+          const on = !!D.roles[r].pages[k];
+          return <td key={r}><select className="in" value={on ? 'v' : ''} onChange={e => setPerm(app, r, k, e.target.value)}><option value="">No</option><option value="v">Yes</option></select></td>;
+        })}</tr>)}</tbody></table></div>
     <div className="acts" style={{ marginTop: 12 }}><button className="btn" onClick={() => permReset(app)}>Reset to defaults</button></div>
   </>;
 }
@@ -93,6 +99,10 @@ function ListsTab() {
       <Card title="Meeting offices (guest visits)" k="offices" hint="Offices a host can book for a guest meeting; the Main Office approves the booking.">{(L.offices || []).map(x => <span key={x} className="chip">{x}<X k="offices" v={x} /></span>)}</Card>
       <Card title="Duty shifts" k="shifts" hint="Shifts offered when assigning sewa.">{L.shifts.map(x => <span key={x.name} className="chip">{x.name} <small>{x.time || ''}</small>
         <button type="button" title="Edit timing" aria-label={'Edit ' + x.name} onClick={() => shiftEdit(app, x.name)}>✎</button><X k="shifts" v={x.name} /></span>)}</Card>
+      {app.feature('stayRules') ? (() => { const sr = L.stayRules || { shortMax: 10, monthlyMax: 30 }; return <div className="card" style={{ margin: 0 }}><h3>Stay types</h3>
+        <p className="muted" style={{ marginTop: -6 }}>The stay type is suggested from the number of days. An approver may still choose another type; that is recorded and flagged on the request.</p>
+        <div className="kv" style={{ marginBottom: 10 }}><div><span>Short-Term</span>up to {sr.shortMax} days</div><div><span>Monthly</span>{sr.shortMax + 1} – {sr.monthlyMax} days</div><div><span>Long-Term</span>more than {sr.monthlyMax} days</div></div>
+        <Btn cls="pri" onClick={() => stayRulesEdit(app)}>Change day limits</Btn></div>; })() : null}
     </div>
     <p className="muted">Member types (Short-Term, Monthly, Long-Term) are fixed because the stay-expiry alerts and monthly/long-term screens depend on them. Departments, branches and buildings are managed on their own pages.</p>
   </>;

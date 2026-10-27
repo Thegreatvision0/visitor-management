@@ -5,6 +5,14 @@ import { api, getToken, setToken, setUnauthorizedHandler } from './api.js';
 import { makeDomain } from './lib/domain.js';
 
 const Ctx = createContext(null);
+
+/* archived branches, departments and requests are kept apart: lists and forms use only the ones in use */
+const prep = d => {
+  if (!d) return d;
+  const split = l => [(l || []).filter(x => !x.archived), (l || []).filter(x => x.archived)];
+  const [branches, ab] = split(d.branches), [depts, ad] = split(d.depts), [regs, ar] = split(d.regs);
+  return { ...d, branches, depts, regs, archived: { branches: ab, depts: ad, regs: ar } };
+};
 export const useApp = () => useContext(Ctx);
 
 export function AppProvider({ children }) {
@@ -15,6 +23,12 @@ export function AppProvider({ children }) {
   const [modal, setModal] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [ui, setUi] = useState({ f: {}, tab: {}, closed: {} });
+  /* DEMO mode and feature switches — known before sign-in (shared/features.js, FEATURES env) */
+  const [meta, setMeta] = useState({ demo: false, features: {} });
+  /* masked mobile numbers revealed in this session (each reveal is in the audit log) */
+  const [revealed, setRevealed] = useState({});
+  const reveal = useCallback(async id => { const r = await api.post(`/members/${id}/reveal`); setRevealed(x => ({ ...x, [id]: r })); }, []);
+  useEffect(() => { api.get('/meta').then(setMeta).catch(() => {}); }, []);
   const tid = useRef(0);
 
   const toast = useCallback((msg, kind) => {
@@ -25,16 +39,16 @@ export function AppProvider({ children }) {
   const openModal = useCallback(node => setModal(node), []);
   const closeModal = useCallback(() => setModal(null), []);
 
-  const reload = useCallback(async () => { setData(await api.get('/snapshot')); }, []);
+  const reload = useCallback(async () => { setData(prep(await api.get('/snapshot'))); }, []);
   const loadSession = useCallback(async () => {
     /* both requests at once — one network round trip less when signing in */
     const [u, d] = await Promise.all([api.get('/auth/me'), api.get('/snapshot').catch(e => e)]);
     if (u.mustChangePassword) { setMe(u); setData(null); return; } // temporary password: choose a new one first
     if (d instanceof Error) throw d;
-    setMe(u); setData(d);
+    setMe(u); setData(prep(d));
   }, []);
   const logout = useCallback(() => {
-    setToken(null); setMe(null); setData(null); setModal(null); setUi({ f: {}, tab: {}, closed: {} });
+    setToken(null); setMe(null); setData(null); setModal(null); setUi({ f: {}, tab: {}, closed: {} }); setRevealed({});
   }, []);
   const login = useCallback(async (username, password) => {
     const { token } = await api.post('/auth/login', { username, password });
@@ -90,9 +104,11 @@ export function AppProvider({ children }) {
   const toggle = useCallback(k => setUi(u => ({ ...u, closed: { ...u.closed, [k]: !u.closed[k] } })), []);
   const go = useCallback(page => { setModal(null); navigate('/' + page); window.scrollTo(0, 0); }, [navigate]);
 
-  const value = { me, data, D, booting, login, logout, loadSession, reload, api, toast, openModal, closeModal, mutate, run, ui, setF, setFs, setTab, toggle, go };
+  const feature = k => !!((data && data.features) || meta.features)[k];
+  const value = { revealed, reveal, meta, feature, me, data, D, booting, login, logout, loadSession, reload, api, toast, openModal, closeModal, mutate, run, ui, setF, setFs, setTab, toggle, go };
   return (
     <Ctx.Provider value={value}>
+      {meta.demo ? <div className="demo-ribbon" role="note">DEMO — sample data in a separate demo database, not the live system</div> : null}
       {children}
       <div id="overlay" className={modal ? 'open' : ''} onMouseDown={e => { if (e.target === e.currentTarget) closeModal(); }}>{modal}</div>
       <div id="toasts">{toasts.map(t => <div key={t.id} className={'toast ' + (t.kind || '')}>{t.msg}</div>)}</div>

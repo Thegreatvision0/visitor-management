@@ -38,8 +38,9 @@ const val = (x, v) => typeof x === 'function' ? x(v) : x;
  *            hint (node or fn(values)), ro, dis, list (datalist id or fn(values)), hidden (bool or fn(values)) }]
  * buttons: [{ label, cls, run(values) → Promise<error string | null> }]
  * onChange(name, value, values) may return extra values to merge (cascading selects, auto-fill).
+ * check(values) → { field, message } | null: shared Zod rules (shared/schemas.js), run before any button's action.
  */
-export function FormModal({ title, wide, pre, fields, values: init = {}, buttons, onChange, datalists }) {
+export function FormModal({ title, wide, pre, fields, values: init = {}, buttons, onChange, datalists, check }) {
   const { closeModal } = useApp();
   const [vals, setVals] = useState(() => {
     const v = { ...init };
@@ -79,6 +80,8 @@ export function FormModal({ title, wide, pre, fields, values: init = {}, buttons
       if (f.req && (out[f.n] === '' || out[f.n] == null)) { setErr(`${f.l} is required.`); document.getElementById('f-' + f.n)?.focus(); return; }
       if (out[f.n] && f.t === 'tel' && !isMobile(out[f.n])) { setErr(`${f.l} must be a valid 10-digit mobile number.`); document.getElementById('f-' + f.n)?.focus(); return; }
     }
+    const bad = check && !b.noCheck ? check(out) : null;
+    if (bad) { setErr(bad.message); document.getElementById('f-' + bad.field)?.focus(); return; }
     setBusy(true); setErr('');
     const e = await b.run(out);
     setBusy(false);
@@ -175,3 +178,9 @@ function PhotoField({ label, value, onChange }) {
 export const DtForm = ({ title, note, label, def, run }) => (
   <FormModal title={title} pre={<div className="note">{note}</div>} values={{ dt: def }} fields={[{ n: 'dt', l: 'Date & time', t: 'datetime-local', req: 1 }]} buttons={[{ label, run: v => run(v.dt) }]} />
 );
+
+/** Archive with an optional reason: archiveAsk(app, { title, note, path, done }) → POST path { reason } */
+export const archiveAsk = (app, { title, note, path, done }) => app.openModal(<FormModal title={title}
+  pre={<div className="note">{note} Archived records are hidden from lists and forms but kept with their history, and can be restored at any time.</div>}
+  fields={[{ n: 'reason', l: 'Reason (optional)', full: 1, ph: 'e.g. merged, closed, duplicate' }]}
+  buttons={[{ label: 'Archive', cls: 'bad', run: v => app.mutate(() => app.api.post(path, { reason: v.reason }), done) }]} />);

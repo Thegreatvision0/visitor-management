@@ -56,7 +56,7 @@ export function productionChecks() {
   const problems = [];
   const s = process.env.JWT_SECRET || '';
   if (s.length < 32 || /change-me/i.test(s)) problems.push('JWT_SECRET must be a long random string (32+ characters).');
-  if (process.env.SEED_ON_EMPTY !== 'false') problems.push('Set SEED_ON_EMPTY=false so sample data is never loaded into the live database.');
+  if (process.env.SEED_ON_EMPTY !== 'false' && process.env.DEMO_MODE !== 'true') problems.push('Set SEED_ON_EMPTY=false so sample data is never loaded into the live database.');
   if (problems.length) { console.error('Refusing to start in production:\n - ' + problems.join('\n - ')); process.exit(1); }
 }
 

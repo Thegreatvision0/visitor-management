@@ -1,5 +1,5 @@
 /* Small presentational building blocks shared by every page. */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context.jsx';
 import { natCmp } from '@shared/text.js';
 
@@ -155,3 +155,30 @@ export function FSelect({ k, opts, all, onPick }) {
 }
 export const KV = ({ items }) => <div className="kv">{items.filter(Boolean).map(([k, v, full]) => <div key={k} style={full ? { gridColumn: '1/-1' } : null}><span>{k}</span>{v}</div>)}</div>;
 export const Chip = ({ children }) => <span className="chip">{children}</span>;
+
+/** "⋯" menu for less common or risky row actions (archive, delete). items: [{ label, on, danger }] (falsy items are skipped) */
+export function RowMenu({ items, label = 'More actions' }) {
+  const [open, setOpen] = useState(false), ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const out = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }, key = e => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', out); document.addEventListener('keydown', key);
+    return () => { document.removeEventListener('mousedown', out); document.removeEventListener('keydown', key); };
+  }, [open]);
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return null;
+  return <span className="rmenu" ref={ref}>
+    <button type="button" className="btn sm rmenu-b" aria-haspopup="menu" aria-expanded={open} aria-label={label} title={label} onClick={() => setOpen(o => !o)}>⋯</button>
+    {open ? <div className="rmenu-dd" role="menu">{list.map((x, i) => <button key={i} type="button" role="menuitem" className={x.danger ? 'dng' : ''} autoFocus={i === 0} onClick={() => { setOpen(false); x.on(); }}>{x.label}</button>)}</div> : null}
+  </span>;
+}
+
+/** A member's mobile (or emergency mobile): masked as 98XXXXX280 for roles without "See mobile numbers", with Reveal. */
+export function Mobile({ m, field = 'mobile' }) {
+  const { revealed, reveal, toast } = useApp(), [busy, setBusy] = useState(false);
+  if (!m) return null;
+  const v = (revealed[m.id] || {})[field] || m[field];
+  if (!/X/.test(String(v || ''))) return <>{v}</>;
+  return <span className="masked">{v} <button type="button" className="linkb sm" disabled={busy} title="Show the full number (recorded in the audit log)"
+    onClick={async e => { e.stopPropagation(); setBusy(true); try { await reveal(m.id); } catch (x) { toast(x.message, 'bad'); } setBusy(false); }}>Reveal</button></span>;
+}

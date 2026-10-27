@@ -18,8 +18,9 @@ function useWidth(min = 280) {
   }, [min]);
   return [ref, w];
 }
-const niceMax = v => { if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; };
-const ticks = max => { const m = niceMax(max), step = m / 4; return [0, 1, 2, 3, 4].map(i => Math.round(i * step)); };
+/* axis ticks: whole numbers in even steps of 1, 2, 5, 10 … with no gaps (0 1 2 3 4 5, 0 5 10 15 …) */
+const niceStep = raw => { const p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; };
+const ticks = max => { const step = Math.max(1, niceStep(Math.max(max, 1) / 5)), n = Math.max(1, Math.ceil(max / step)); return Array.from({ length: n + 1 }, (_, i) => i * step); };
 const compact = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K' : String(n);
 /* horizontal bar: square at the baseline (left), 4px rounded data-end (right) */
 const hbarPath = (x, y, w, h) => { const r = Math.min(4, w / 2, h / 2); return w <= 0 ? '' : `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`; };
@@ -59,7 +60,7 @@ export function HBarChart({ data, color = SERIES[0], unit = '', empty = 'No data
   if (!data.length) return <div className="empty">{empty}</div>;
   const labelW = Math.min(170, Math.max(96, W * 0.32)), valW = 40, row = 30, bar = 16, top = 4;
   const plotW = Math.max(40, W - labelW - valW), max = Math.max(1, ...data.map(d => d.value));
-  const H = top + data.length * row + 22, tk = ticks(max), scale = v => v / tk[4] * plotW;
+  const H = top + data.length * row + 22, tk = ticks(max), scale = v => v / tk[tk.length - 1] * plotW;
   const show = (e, i, d, y) => { const b = ref.current.getBoundingClientRect(); setTip({ i, x: e.clientX - b.left, y: y + 4, body: <><b>{d.label}</b><div>{d.value}{unit}{d.sub ? ' · ' + d.sub : ''}</div>{d.onClick ? <div style={{ opacity: .75 }}>{pointer.current === 'mouse' ? 'Click' : 'Tap again'} to open</div> : null}</> }); };
   return (
     <div className="viz" ref={ref} onPointerLeave={e => { if (e.pointerType === 'mouse') setTip(null); }}>
@@ -95,7 +96,7 @@ export function LineChart({ x, series, marker, fmtX, height = 230 }) {
   const [ref, W] = useWidth(), [hov, setHov] = useState(null);
   const padL = 34, padR = 64, padT = 12, padB = 26, H = height, plotW = W - padL - padR, plotH = H - padT - padB;
   const max = Math.max(1, ...series.flatMap(s => s.values)), tk = ticks(max);
-  const X = i => padL + (x.length > 1 ? i / (x.length - 1) * plotW : plotW / 2), Y = v => padT + plotH - v / tk[4] * plotH;
+  const X = i => padL + (x.length > 1 ? i / (x.length - 1) * plotW : plotW / 2), Y = v => padT + plotH - v / tk[tk.length - 1] * plotH;
   const every = Math.max(1, Math.ceil(x.length / Math.max(2, Math.floor(plotW / 70))));
   const path = vals => vals.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
   const onMove = e => { const b = ref.current.getBoundingClientRect(), mx = e.clientX - b.left; const i = Math.round((mx - padL) / plotW * (x.length - 1)); setHov(Math.max(0, Math.min(x.length - 1, i))); };

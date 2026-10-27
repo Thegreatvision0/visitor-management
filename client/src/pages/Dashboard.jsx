@@ -3,6 +3,7 @@ import { PageHead } from '../components/ui.jsx';
 import { ChartCard, HBarChart, LineChart, PartBar, MiniPart, SERIES } from '../components/Charts.jsx';
 import { today, fd, fdt, diffDays, dayOf, addDays, MON, relTime } from '@shared/dates.js';
 import { stayStart, stayEnd, stayType, pendingExt } from '@shared/constants.js';
+import { counts, Help, COUNT_HELP } from '../lib/counts.jsx';
 
 const Icon = ({ d }) => <svg className="ic" viewBox="0 0 24 24"><path d={d} /></svg>;
 const I = {
@@ -15,16 +16,14 @@ const I = {
 export default function Dashboard() {
   const { D, me, data, go, setTab, setFs } = useApp();
   const t = today(), R = D.regs(), M = D.members();
-  const res = R.filter(r => r.status === 'Checked In'), overdue = res.filter(r => stayEnd(r) < t);
-  const arr = R.filter(r => ['Approved', 'Checked In', 'Checked Out'].includes(r.status) && (r.actualIn ? dayOf(r.actualIn) : stayStart(r)) === t), arrived = arr.filter(r => r.actualIn);
-  const depExp = R.filter(r => r.status === 'Checked In' && stayEnd(r) === t), depDone = R.filter(r => r.status === 'Checked Out' && dayOf(r.actualOut) === t);
+  const K = counts(D, t), res = K.residing, overdue = K.overdue; // same definitions as Reception and Accommodation
   const subs = R.filter(r => r.status === 'Submitted'), exts = R.filter(r => pendingExt(r));
   const showBeds = D.can('accommodation');
   const sub = <>{D.role.label} · {fd(t)}{me.role === 'coordinator' ? ' · ' + ((D.branch(me.branchId) || {}).name || 'no branch set') + ' branch' : ''}{me.role === 'supervisor' ? ' · ' + ((D.dept(me.deptId) || {}).name || 'no department set') + ' department' : ''}</>;
   const openTab = (page, tab, f) => { if (f) setFs(f); if (tab) setTab(page, tab); go(page); };
 
   /* beds */
-  const st = D.bedStates(), c = { Available: 0, Occupied: 0, Reserved: 0, Cleaning: 0 }; st.forEach(s => c[s.status]++);
+  const st = D.bedStates(), c = K.beds;
   const tot = data.beds.length, occPct = tot ? Math.round(c.Occupied / tot * 100) : 0;
   const BED = [['Occupied', SERIES[0]], ['Reserved', SERIES[1]], ['Cleaning', SERIES[2]], ['Available', '#cbd5e1']];
   const blds = data.buildings.map(b => {
@@ -65,26 +64,28 @@ export default function Dashboard() {
   }
   if (D.can('departments') && noDuty) al.push(['info', `${noDuty} resident(s) without sewa assignment`, () => openTab('departments', 'u')]);
 
-  const Kpi = ({ label, value, sub, icon, onClick, hero }) => {
+  const Kpi = ({ label, value, sub, icon, onClick, hero, help }) => {
     const Tag = onClick ? 'button' : 'div';
-    return <Tag type={onClick ? 'button' : undefined} className={'kpi' + (hero ? ' hero' : '')} onClick={onClick}>
-      <span className="kicon"><Icon d={icon} /></span><span className="kl">{label}</span><span className="kval">{value}</span>{sub ? <span className="ks">{sub}</span> : null}
+    return <Tag type={onClick ? 'button' : undefined} className={'kpi' + (hero ? ' hero' : '')} onClick={onClick} title={help ? COUNT_HELP[help] : undefined}>
+      <span className="kicon"><Icon d={icon} /></span><span className="kl">{label}{help && D.feature('kpiHelp') ? <> <Help k={help} /></> : null}</span><span className="kval">{value}</span>{sub ? <span className="ks">{sub}</span> : null}
     </Tag>;
   };
 
   return <>
     <PageHead title="Dashboard" sub={sub} />
     <div className="kpis">
-      <Kpi hero label="Currently residing" value={res.length} icon={I.home} onClick={() => openTab('reception', 'r')}
-        sub={<>{overdue.length ? <span className="pill bad">{overdue.length} overdue</span> : 'None overdue'} · {ty('Short-Term')} short · {ty('Monthly')} monthly · {ty('Long-Term')} long</>} />
+      <Kpi hero label="Currently residing" help="residing" value={res.length} icon={I.home} onClick={() => openTab('reception', 'r', { 'rc.q': '' })}
+        sub={<>{ty('Short-Term')} short · {ty('Monthly')} monthly · {ty('Long-Term')} long{overdue.length ? <span className="pill bad">{overdue.length} overdue</span> : <> · none overdue</>}</>} />
       <Kpi label="Registered sewadar" value={M.length.toLocaleString('en-IN')} icon={I.people} onClick={() => go('members')} sub="Member Master" />
-      <Kpi label="Today's arrivals" value={<>{arrived.length}<small> / {arr.length}</small></>} icon={I.inn} onClick={() => openTab('reception', 'a')} sub="arrived / expected" />
-      <Kpi label="Today's departures" value={<>{depDone.length}<small> / {depExp.length + depDone.length}</small></>} icon={I.out} onClick={() => openTab('reception', 'd')} sub="departed / due" />
+      <Kpi label="Expected arrivals" help="expected" value={K.expected.length} icon={I.inn} onClick={() => openTab('reception', 'a', { 'rc.af': '', 'rc.q': '' })}
+        sub={<>{K.arrivedToday.length} arrived today{K.late.length ? <span className="pill warn">{K.late.length} late</span> : null}</>} />
+      <Kpi label="Due to depart" help="dueToday" value={K.dueToday.length} icon={I.out} onClick={() => openTab('reception', 'd', { 'rc.df': '', 'rc.q': '' })}
+        sub={<>{K.departedToday.length} checked out today{K.overdue.length ? <span className="pill bad">{K.overdue.length} overdue</span> : null}</>} />
       <Kpi label="Pending approvals" value={subs.length + exts.length} icon={I.check} onClick={() => go('approvals')}
         sub={<>{subs.length} registrations · {exts.length} extensions{subs.length + exts.length ? <span className="pill warn">action needed</span> : null}</>} />
       {D.can('visitors') ? (() => { const gv = (data.visits || []).filter(v => v.date === t && ['Confirmed', 'Arrived', 'Completed'].includes(v.status)), ins = gv.filter(v => v.status !== 'Confirmed').length;
         return <Kpi label="Guests today" value={<>{ins}<small> / {gv.length}</small></>} icon={I.inn} onClick={() => openTab('visitors', ['security'].includes(me.role) ? 'gate' : 'sched')} sub={`arrived / expected · ${gv.filter(v => v.vehicle && v.vehicle.has).length} vehicle(s)`} />; })() : null}
-      {showBeds ? <Kpi label="Bed occupancy" value={<>{occPct}<small>%</small></>} icon={I.bed} onClick={() => go('accommodation')} sub={`${c.Occupied} of ${tot} beds · ${c.Available} free`} /> : null}
+      {showBeds ? <Kpi label="Bed occupancy" help="occupied" value={<>{occPct}<small>%</small></>} icon={I.bed} onClick={() => go('accommodation')} sub={`${c.Occupied} of ${tot} beds · ${c.Available} free`} /> : null}
     </div>
 
     <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,520px),1fr))', marginBottom: 0 }}>

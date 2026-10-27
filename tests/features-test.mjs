@@ -35,11 +35,11 @@ try {
   ok((await call(A, 'DELETE', `/members/${mk.data.id}?reason=duplicate`)).status === 200, '#7 member archived');
   const am = (await snap(A)).members.find(m => m.id === mk.data.id);
   ok(am && am.archived && am.archived.reason === 'duplicate', '#7 archived member keeps its ID and record');
-  ok((await call(A, 'POST', '/members', { name: 'Other', mobile: '9876001122', dob: '1991-01-01', gender: 'Male', type: 'Short-Term', state: 'Punjab', branchId: br.id, district: 'X', address: 'Y', emName: 'Z', emPhone: '9876001133' })).data.error.includes('archived'), '#7 re-using the mobile points to the archived record');
-  ok((await call(A, 'POST', '/regs', { memberId: mk.data.id, branchId: br.id, arrival: d(3), departure: d(5), purpose: 'x', mode: 'submit' })).data.error.includes('archived'), '#7 no new registration for an archived member');
+  ok((await call(A, 'POST', '/members', { name: 'Other', mobile: '9876001122', dob: '1991-01-01', gender: 'Male', type: 'Short-Term', state: 'Punjab', branchId: br.id, district: 'Ludhiana', address: 'Village Rampur, Ludhiana', emName: 'Ram Lal', emPhone: '9876001133' })).data.error.includes('archived'), '#7 re-using the mobile points to the archived record');
+  ok((await call(A, 'POST', '/regs', { memberId: mk.data.id, branchId: br.id, arrival: d(3), departure: d(5), purpose: 'Seva during programme', mode: 'submit' })).data.error.includes('archived'), '#7 no new registration for an archived member');
   ok((await call(A, 'DELETE', `/members/${mk.data.id}?permanent=1`)).status === 200 || true, 'permanent delete available to Super Admin');
   ok(!(await snap(A)).members.some(m => m.id === mk.data.id), 'permanently deleted member is gone');
-  const m2 = await call(A, 'POST', '/members', { name: 'Archive Me', mobile: '9876001144', dob: '1992-01-01', gender: 'Female', type: 'Short-Term', state: 'Punjab', branchId: br.id, district: 'Jalandhar', address: 'Y', emName: 'Z', emPhone: '9876001133' });
+  const m2 = await call(A, 'POST', '/members', { name: 'Archive Me', mobile: '9876001144', dob: '1992-01-01', gender: 'Female', type: 'Short-Term', state: 'Punjab', branchId: br.id, district: 'Jalandhar', address: 'Village Rampur, Ludhiana', emName: 'Ram Lal', emPhone: '9876001133' });
   ok(m2.data.id > mk.data.id, `IDs never reused (${mk.data.id} → ${m2.data.id})`);
 
   const P = await as('admin', '/members');
@@ -72,7 +72,7 @@ try {
   ok(await P.locator('main .filters select').nth(0).inputValue() === 'Delhi', '#15 saved filters restore the state filter');
   await P.click('.savedf button:has-text("Clear")');
   /* archive via UI, find in Archived and via search */
-  await P.fill('main .filters input', 'Archive Me'); await P.click('main tbody button:has-text("Archive")'); await P.fill('#f-reason', 'test'); await P.click('.mdl button:has-text("Archive member")'); await P.waitForSelector('.toast.ok');
+  await P.fill('main .filters input', 'Archive Me'); await P.click('main tbody .rmenu-b'); await P.click('.rmenu-dd button:has-text("Archive member")'); await P.fill('#f-reason', 'test'); await P.click('.mdl button:has-text("Archive member")'); await P.waitForSelector('.toast.ok');
   await P.click('.fchip:has-text("Archived")'); await P.fill('main .filters input', '');
   ok((await P.textContent('main tbody')).includes('Archive Me'), '#7 archived member listed under Archived');
   await P.fill('.gsw input', m2.data.id); await P.waitForSelector('.gsw .dd .it');
@@ -102,7 +102,7 @@ try {
   const R = await as('reception', '/dashboard'); await R.click('.iconbtn');
   await R.click(`.dd .it:has-text("${rg.data.id}) approved")`); await R.waitForSelector('.mdl');
   ok(R.url().endsWith('/reception') && (await R.textContent('.mdl h2')).includes('Confirm arrival'), '#3 "expected" notification opens Reception → Confirm arrival');
-  await R.click('.mdl button:has-text("Confirm arrival")'); await R.waitForSelector('.toast.ok');
+  await R.selectOption('#f-bed', { index: 1 }); await R.click('.mdl button:has-text("Confirm arrival")'); await R.waitForSelector('.toast.ok');
   await R.click('.iconbtn'); ok(!(await R.textContent('.dd')).includes(`${rg.data.id}) approved`), '#5 after Confirm arrival the notification is gone');
   /* needs-attention links */
   await P.goto(base + '/dashboard'); await P.waitForSelector('main .ph'); await P.click('.iconbtn');
@@ -142,7 +142,7 @@ try {
   /* #17 branch buttons */
   await P.goto(base + '/branches'); await P.waitForSelector('main tbody');
   const bcls = await P.locator('main tbody tr:not(.rt-group)').first().locator('.rowacts .btn').evaluateAll(bs => bs.map(x => x.className.split(' ').pop()));
-  ok(bcls.join() === 'a-view,a-move,a-edit,a-out', '#17 branch buttons styled: ' + bcls.join(', '));
+  ok(bcls.join() === 'a-view,a-move,a-edit,rmenu-b', '#17 branch buttons styled; archive / delete in the ⋯ menu: ' + bcls.join(', '));
   /* password eye inside forms */
   await P.click('.prof'); await P.click('button:has-text("Change password")');
   ok(await P.locator('.mdl .pw-eye').count() === 3, '#1 show/hide on all three change-password fields');

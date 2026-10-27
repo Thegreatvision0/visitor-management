@@ -16,24 +16,24 @@ try {
   const snap = (await call(A, 'GET', '/snapshot')).data;
   ok(['Kerala', 'Assam', 'Ladakh', 'Puducherry'].every(s => snap.lists.states.includes(s)), '#1 all Indian states/UTs in list (' + snap.lists.states.length + ')');
   // #2 unique names
-  ok((await call(A, 'POST', '/branches', { name: 'ludhiana ', state: 'Kerala', district: 'X', coordinator: 'Y', phone: '9876543210' })).data.error?.includes('already exists'), '#2 duplicate branch name blocked across states/case');
+  ok((await call(A, 'POST', '/branches', { name: 'ludhiana ', state: 'Kerala', district: 'Ludhiana', coordinator: 'Ravi Kumar', phone: '9876543210' })).data.error?.includes('already exists'), '#2 duplicate branch name blocked across states/case');
   // #4 sub-branches
-  ok((await call(C, 'POST', '/branches', { name: 'Top Level', state: 'Punjab', district: 'X', coordinator: 'Y', phone: '9876543210' })).status === 403, '#4 coordinator cannot create a main branch');
+  ok((await call(C, 'POST', '/branches', { name: 'Top Level', state: 'Punjab', district: 'Ludhiana', coordinator: 'Ravi Kumar', phone: '9876543210' })).status === 403, '#4 coordinator cannot create a main branch');
   const sb = await call(C, 'POST', '/branches', { name: 'Ludhiana – Model Town', parentId: 'BR003', state: 'Kerala', district: 'Ludhiana', coordinator: 'Sub Coord', phone: '9876543211' });
   ok(sb.status === 200, '#4 coordinator creates sub-branch ' + sb.data.id);
   const s1 = (await call(C, 'GET', '/snapshot')).data;
   ok(s1.branches.find(b => b.id === sb.data.id).state === 'Punjab' && s1.family.includes(sb.data.id), '#4 sub-branch takes parent state and is in coordinator family');
-  ok((await call(C, 'POST', '/branches', { name: 'Sneaky', parentId: 'BR001', state: 'Punjab', district: 'X', coordinator: 'Y', phone: '9876543210' })).status === 403, '#4 coordinator cannot add under another branch');
-  const mem = await call(C, 'POST', '/members', { name: 'Sub Member', mobile: '9876511111', dob: '1990-01-01', gender: 'Male', branchId: sb.data.id, type: 'Monthly', state: 'Punjab', district: 'Ludhiana', address: 'x', emName: 'y', emPhone: '9876511112' });
+  ok((await call(C, 'POST', '/branches', { name: 'Sneaky', parentId: 'BR001', state: 'Punjab', district: 'Ludhiana', coordinator: 'Ravi Kumar', phone: '9876543210' })).status === 403, '#4 coordinator cannot add under another branch');
+  const mem = await call(C, 'POST', '/members', { name: 'Sub Member', mobile: '9876511111', dob: '1990-01-01', gender: 'Male', branchId: sb.data.id, type: 'Monthly', state: 'Punjab', district: 'Ludhiana', address: 'Village Rampur, Ludhiana', emName: 'Ram Lal', emPhone: '9876511112' });
   ok(mem.status === 200, '#4 coordinator adds member to sub-branch');
   ok((await call(C, 'DELETE', '/branches/BR003')).status === 403, '#4 coordinator cannot delete own main branch');
   ok((await call(A, 'DELETE', '/branches/BR003?moveTo=BR001')).data.error?.includes('sub-branch'), '#4 branch with sub-branches cannot be deleted');
   // #9 auto type
-  const r1 = await call(C, 'POST', '/regs', { memberId: mem.data.id, branchId: sb.data.id, arrival: d(5), departure: d(8), type: 'Monthly', purpose: 'x', mode: 'draft' });
+  const r1 = await call(C, 'POST', '/regs', { memberId: mem.data.id, branchId: sb.data.id, arrival: d(5), departure: d(8), type: 'Monthly', purpose: 'Seva during programme', mode: 'draft' });
   ok(r1.data.type === 'Short-Term', '#9 4-day stay registered as Monthly → Short-Term');
-  const r2 = await call(C, 'PUT', '/regs/' + r1.data.id, { arrival: d(5), departure: d(24), type: 'Short-Term', purpose: 'x', mode: 'draft' });
+  const r2 = await call(C, 'PUT', '/regs/' + r1.data.id, { arrival: d(5), departure: d(24), type: 'Short-Term', purpose: 'Seva during programme', mode: 'draft' });
   ok(r2.data.type === 'Monthly', '#9 20-day stay → Monthly');
-  const r3 = await call(C, 'PUT', '/regs/' + r1.data.id, { arrival: d(5), departure: d(45), type: 'Short-Term', purpose: 'x', mode: 'submit', branchId: sb.data.id });
+  const r3 = await call(C, 'PUT', '/regs/' + r1.data.id, { arrival: d(5), departure: d(45), type: 'Short-Term', purpose: 'Seva during programme', mode: 'submit', branchId: sb.data.id });
   ok(r3.data.type === 'Long-Term' && r3.data.status === 'Submitted', '#9 41-day stay → Long-Term, submitted');
   // #6 rev + #7 notifications
   const rev1 = (await call(A, 'GET', '/rev')).data.rev;
@@ -45,7 +45,7 @@ try {
   await call(A, 'POST', `/regs/${r1.data.id}/approve`, { from: d(5), to: d(9), type: 'Long-Term' });
   ok((await call(A, 'GET', '/rev')).data.rev !== rev1, '#6 data revision changes after a write');
   const sAp = (await call(A, 'GET', '/snapshot')).data.regs.find(r => r.id === r1.data.id);
-  ok(sAp.approvedType === 'Short-Term', '#9 approval type follows approved dates (5 days → Short-Term)');
+  ok(sAp.approvedType === 'Long-Term' && sAp.typeOverride && sAp.typeOverride.suggested === 'Short-Term', '#9 a type chosen against the dates is kept and flagged as a manual override (dates suggest Short-Term)');
   const cn = (await call(C, 'GET', '/snapshot')).data.notifications;
   ok(cn.some(n => n.text.startsWith('Approved: ' + r1.data.id)), '#7 coordinator notified of approval');
   ok((await call(R, 'GET', '/snapshot')).data.notifications.some(n => n.text.includes(r1.data.id) && n.text.includes('expected')), '#7 reception notified of expected arrival');

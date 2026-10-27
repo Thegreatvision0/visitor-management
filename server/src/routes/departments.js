@@ -2,7 +2,8 @@
 import { Router } from 'express';
 import { Department, Duty, Attendance, Registration } from '../models/index.js';
 import { need } from '../middleware/auth.js';
-import { nid, log, fail, notFound, forbidden } from '../lib/core.js';
+import { nid, log, fail, notFound, forbidden, archiveStamp } from '../lib/core.js';
+import { feature } from '../lib/config.js';
 import { body, check, isDate, oneOf } from '../lib/validate.js';
 import { deleteDept, canDept, dutyOn, onSite, assertRegScope, getReg, scopeRegIds, memberName } from '../services/domain.js';
 import { today } from '../../../shared/dates.js';
@@ -26,6 +27,19 @@ async function saveDept(req, id) {
 }
 r.post('/depts', need('departments'), notSupervisor, async (req, res) => res.json({ id: await saveDept(req, null) }));
 r.put('/depts/:id', need('departments'), notSupervisor, async (req, res) => res.json({ id: await saveDept(req, req.params.id) }));
+r.post('/depts/:id/archive', need('departments'), notSupervisor, async (req, res) => {
+  if (!feature('archive')) forbidden('Archiving is switched off.');
+  const d = await Department.findById(req.params.id); if (!d) notFound('Department');
+  const act = await Duty.countDocuments({ deptId: d._id, status: 'Active' });
+  if (act) fail(`${act} sewadar are assigned to ${d.name}. Change or end those duties first.`);
+  d.archived = archiveStamp(req.user, (req.body || {}).reason); d.active = false; await d.save();
+  await log(req.user, 'Archived department ' + d.name); ok(res);
+});
+r.post('/depts/:id/restore', need('departments'), notSupervisor, async (req, res) => {
+  const d = await Department.findById(req.params.id); if (!d) notFound('Department');
+  d.archived = undefined; d.active = true; await d.save();
+  await log(req.user, 'Restored department ' + d.name); ok(res);
+});
 r.delete('/depts/:id', need('departments'), notSupervisor, async (req, res) => { await deleteDept(req.user, req.params.id); ok(res); });
 
 r.delete('/duties/:id', need('departments'), async (req, res) => {

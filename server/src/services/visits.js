@@ -9,6 +9,7 @@ import { fail, forbidden, notFound, nid } from '../lib/core.js';
 import { notify } from './notify.js';
 import { fd, nowLocal, today, overlaps } from '../../../shared/dates.js';
 import { timeAdd } from '../../../shared/constants.js';
+import { withBedLocks } from '../lib/bedlock.js';
 
 export const newToken = () => crypto.randomBytes(18).toString('base64url');
 export const isMgmt = u => ['superadmin', 'manager'].includes(u.role);
@@ -62,6 +63,10 @@ export async function freeBeds(from, to, ignoreVisitId) {
 }
 /** Reserve real beds for an approved stay (they then show as Reserved in Accommodation and cannot be given to anyone else). */
 export async function reserveStayBeds(user, v) {
+  const roomBeds = await Bed.find({ roomId: v.stay.roomId }, { _id: 1 }).lean(); // lock the whole room while choosing free beds
+  return withBedLocks(roomBeds.map(b => b._id), () => reserveNow(user, v));
+}
+async function reserveNow(user, v) {
   const s = v.stay, free = (await freeBeds(s.from, s.to, v._id))[s.roomId] || [];
   const room = await Room.findById(s.roomId).lean();
   if (free.length < s.beds) fail(`${room ? room.name : 'The room'} has only ${free.length} free bed(s) for ${fd(s.from)} – ${fd(s.to)} now. Reject with a note so the host can choose another room.`);

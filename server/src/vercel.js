@@ -3,6 +3,7 @@
 process.env.TZ = process.env.APP_TZ || 'Asia/Kolkata'; // Vercel does not allow a TZ variable; dates ("today") need Indian time
 import mongoose from 'mongoose';
 import { createApp, bootstrapData } from './index.js';
+import { dbOptions } from './lib/config.js';
 
 const app = createApp();
 let ready = null;
@@ -11,7 +12,7 @@ function boot() {
     const missing = ['MONGODB_URI', 'JWT_SECRET'].filter(k => !process.env[k]);
     if (missing.length) throw new Error('Missing environment variable(s) in Vercel: ' + missing.join(', '));
     if (process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be a long random string (32+ characters).');
-    await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
+    await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000, ...dbOptions() });
     await bootstrapData();
   })().catch(e => { ready = null; throw e; }); // try again on the next request
   return ready;

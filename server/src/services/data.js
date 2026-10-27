@@ -2,10 +2,11 @@
 import bcrypt from 'bcryptjs';
 import { DATA_MODELS, Attendance, AuditLog, Settings, User, Registration, Member, Allocation, Duty, Branch, Department } from '../models/index.js';
 import { getSettings, syncCounters, out, fail, getRev } from '../lib/core.js';
-import { defaultLists, resolveRoles, resolveVisitCaps, STATES_DEF, OFFICES_DEF } from '../../../shared/constants.js';
+import { defaultLists, resolveRoles, resolveVisitCaps, STATES_DEF, OFFICES_DEF, maskMobile } from '../../../shared/constants.js';
 import { scopeRegIds } from './domain.js';
 import { branchFamily, notificationsFor } from './notify.js';
-import { DEMO_USERS } from './sample.js';
+import { DEMO_USERS, DEMO_EXTRA_USERS } from './sample.js';
+import { isDemo, features, feature } from '../lib/config.js';
 import { personName, placeName, cleanText } from '../../../shared/text.js';
 
 const strip = list => list.map(out);
@@ -33,6 +34,8 @@ export async function snapshot(user) {
     user.role === 'coordinator' ? branchFamily(user.branchId) : null,
     visitsFor(user), notificationsFor(user), getRev()
   ]);
+  /* roles without "See mobile numbers" get 98XXXXX280; Reveal (logged) shows one member's numbers */
+  if (feature('maskMobiles') && !user.pages.mobiles) members = members.map(m => ({ ...m, mobile: maskMobile(m.mobile), emPhone: maskMobile(m.emPhone), masked: true }));
   return {
     regs: strip(regs), members: strip(members), allocs: strip(allocs), duties: strip(duties), att: attMap(att),
     branches: strip(branches), depts: strip(depts), sites: strip(sites), buildings: strip(buildings), rooms: strip(rooms), beds: strip(beds),
@@ -41,7 +44,8 @@ export async function snapshot(user) {
     visitCaps: user.role === 'superadmin' ? resolveVisitCaps(s.visitCaps) : undefined,
     family, visits,
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/+$/, ''), // address guests use for registration links
-    notifications, rev
+    notifications, rev,
+    demo: isDemo(), features: features() // DEMO ribbon and feature switches
   };
 }
 
@@ -106,7 +110,7 @@ export async function ensureAllStates() {
 export async function ensureDemoUsers() {
   if (await User.countDocuments()) return false;
   const hash = await bcrypt.hash(process.env.SEED_PASSWORD || 'Noormahal@123', 10);
-  for (const u of DEMO_USERS) {
+  for (const u of isDemo() ? DEMO_USERS.concat(DEMO_EXTRA_USERS) : DEMO_USERS) {
     const br = u.branchName ? await Branch.findOne({ name: u.branchName }).lean() : null;
     const dp = u.deptName ? await Department.findOne({ name: u.deptName }).lean() : null;
     await User.create({ _id: u.id, name: u.name, username: u.username, passwordHash: hash, role: u.role, branchId: br ? br._id : '', deptId: dp ? dp._id : '' });

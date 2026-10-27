@@ -37,7 +37,7 @@ try {
   ok(await C.locator('td:has-text("Sub-branch of Ludhiana")').count() >= 1, '#4 sub-branch listed under parent');
   // #2 duplicate name via UI
   await goto(M, '/branches'); await M.click('button:has-text("+ Add branch")');
-  await M.fill('#f-name', 'Ludhiana East'); await M.fill('#f-district', 'x'); await M.fill('#f-coordinator', 'x'); await M.fill('#f-phone', '9876500098');
+  await M.fill('#f-name', 'Ludhiana East'); await M.fill('#f-district', 'Ludhiana'); await M.fill('#f-coordinator', 'Ravi Kumar'); await M.fill('#f-phone', '9876500098');
   await M.click('.mdl button:has-text("Save")'); await M.waitForSelector('.mdl .err');
   ok((await M.textContent('.mdl .err')).includes('must be unique'), '#2 duplicate branch name shown as error'); await M.keyboard.press('Escape');
   // #6 auto-refresh: manager is on approvals; coordinator submits; manager page updates without reload

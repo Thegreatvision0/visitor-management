@@ -49,7 +49,7 @@ try {
   const pub = (await call(null, 'GET', '/public/visits/' + inv.data.token)).data;
   ok(pub.lockMeeting && pub.deptName === 'Security', 'guest link shows the fixed meeting');
   // guest tries to redirect to Langar (head B) — ignored
-  await call(null, 'POST', '/public/visits/' + inv.data.token, { name: 'Guest of A', mobile: '9876500011', meetWith: 'Head Langar', deptName: 'Langar Serving', deptId: 'DP02', date: d(1), time: '10:00', purpose: 'x' });
+  await call(null, 'POST', '/public/visits/' + inv.data.token, { name: 'Guest of A', mobile: '9876500011', meetWith: 'Head Langar', deptName: 'Langar Serving', deptId: 'DP02', date: d(1), time: '10:00', purpose: 'Seva during programme' });
   const vA2 = (await snap(A)).visits.find(v => v.id === inv.data.id);
   ok(vA2.status === 'Submitted' && vA2.deptId === 'DP01', "guest cannot move the meeting to another department head");
   // isolation

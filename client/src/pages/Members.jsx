@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context.jsx';
-import { PageHead, PBtn, Btn, Table, Badge, Avatar, FInput, FSelect, SavedFilters } from '../components/ui.jsx';
+import { PageHead, PBtn, Btn, Table, Badge, Avatar, FInput, FSelect, SavedFilters, RowMenu, Mobile } from '../components/ui.jsx';
 import { confirm } from '../components/Modal.jsx';
 import { ageOf, fdt } from '@shared/dates.js';
 import { TYPES, LIVE } from '@shared/constants.js';
@@ -24,15 +24,17 @@ export default function Members() {
   const cols = [
     ['Member', m => <div className="who"><Avatar m={m} /><div><b className={D.residency(m) === 'Resident' ? 'res' : 'nonres'}>{m.name}</b><br /><small>{m.id}</small></div></div>, { sort: m => m.name, csv: m => m.name }],
     ['Member ID', m => m.id, { sort: m => m.id, hide: true }],
-    ['Mobile', m => m.mobile, { sort: m => m.mobile }], ['Age / Gender', m => `${ageOf(m.dob)} · ${m.gender}`, { sort: m => -new Date(m.dob), csv: m => `${ageOf(m.dob)} · ${m.gender}` }],
+    ['Mobile', m => <Mobile m={m} />, { sort: m => m.mobile, csv: m => m.mobile }], ['Age / Gender', m => `${ageOf(m.dob)} · ${m.gender}`, { sort: m => -new Date(m.dob), csv: m => `${ageOf(m.dob)} · ${m.gender}` }],
     ['Branch', m => <>{D.bName(m.branchId)}<br /><small>{m.state}</small></>, { sort: m => D.bName(m.branchId), csv: m => D.bName(m.branchId) }],
     ['State', m => m.state, { sort: m => m.state, hide: true }], ['District', m => m.district, { sort: m => m.district, hide: true }],
     ['Type', m => <Badge s={m.type} />, { sort: m => m.type, csv: m => m.type }],
     arch ? ['Archived', m => <>{fdt(m.archived.on)}<br /><small>by {m.archived.by}{m.archived.reason ? ' — ' + m.archived.reason : ''}</small></>, { sort: m => m.archived.on, csv: m => m.archived.on }]
       : ['Status', resB, { sort: m => RES.indexOf(D.residency(m)), csv: m => D.residency(m) }],
     ['', m => arch
-      ? <><Btn onClick={() => memberView(app, m.id)}>View</Btn>{D.canEditMember(m) ? <Btn cls="ok" onClick={() => memberRestore(app, m.id)}>Restore</Btn> : null}{me.role === 'superadmin' ? <Btn cls="dng" onClick={() => memberPurge(app, m.id)}>Delete permanently</Btn> : null}</>
-      : <><Btn onClick={() => memberView(app, m.id)}>View</Btn>{D.canEditMember(m) ? <><Btn onClick={() => memberEdit(app, m.id)}>Edit</Btn><Btn cls="dng" onClick={() => memberDelete(app, m.id)}>Archive</Btn></> : null}</>]];
+      ? <span className="rowacts"><Btn onClick={() => memberView(app, m.id)}>View</Btn>{D.canEditMember(m) ? <Btn cls="ok" onClick={() => memberRestore(app, m.id)}>Restore</Btn> : null}
+          <RowMenu items={[me.role === 'superadmin' && !D.hasStayed(m.id) && { label: 'Delete permanently…', danger: true, on: () => memberPurge(app, m.id) }]} /></span>
+      : <span className="rowacts"><Btn onClick={() => memberView(app, m.id)}>View</Btn>{D.canEditMember(m) ? <><Btn onClick={() => memberEdit(app, m.id)}>Edit</Btn>
+          <RowMenu items={[{ label: 'Archive member…', danger: true, on: () => memberDelete(app, m.id) }]} /></> : null}</span>]];
   /* bulk: archive the ticked members (those with a live request are skipped and reported) */
   const bulkArchive = () => {
     const ms = [...sel].map(D.member).filter(m => m && D.canEditMember(m));

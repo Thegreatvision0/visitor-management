@@ -1,10 +1,11 @@
 /* Business rules — ported from the prototype's domain helpers, now enforced on the server. */
 import { Registration, Allocation, Duty, Bed, Room, Building, Site, Member, Branch, Department, User, Attendance, Settings } from '../models/index.js';
-import { fail, notFound, forbidden, hist, log, nid } from '../lib/core.js';
+import { fail, notFound, forbidden, hist, log, nid, stayRules } from '../lib/core.js';
 import { today, nowLocal, fd, fdt, dayOf, addDays, overlaps } from '../../../shared/dates.js';
 import { stayStart, stayEnd, LIVE, stayTypeFor } from '../../../shared/constants.js';
 import { canEdit } from '../middleware/auth.js';
 import { notify, branchFamily } from './notify.js';
+import { withBedLocks } from '../lib/bedlock.js';
 export { branchFamily };
 
 /* ---------- lookups ---------- */
@@ -50,7 +51,9 @@ export async function memberClash(memberId, from, to, ignore) {
 
 /* ---------- beds ---------- */
 /** Allocate a bed to an approved / checked-in stay. */
-export async function allocate(user, regId, bedId, from, to, reason) {
+/* every booking change runs under the bed lock (lib/bedlock.js): check + save are atomic across server copies */
+export const allocate = (user, regId, bedId, from, to, reason) => withBedLocks([bedId], () => allocateNow(user, regId, bedId, from, to, reason));
+async function allocateNow(user, regId, bedId, from, to, reason) {
   const r = await getReg(regId), b = await Bed.findById(bedId);
   if (!['Approved', 'Checked In'].includes(r.status)) fail('Only approved members can be allocated accommodation.');
   if (await activeAlloc(regId)) fail('This stay already has a bed. Use Transfer instead.');
@@ -69,7 +72,8 @@ export async function allocate(user, regId, bedId, from, to, reason) {
 }
 
 /** Move a resident to another bed from `date`; the old allocation is kept as history. */
-export async function transferBed(user, regId, newBedId, date) {
+export const transferBed = (user, regId, newBedId, date) => withBedLocks([newBedId], () => transferNow(user, regId, newBedId, date));
+async function transferNow(user, regId, newBedId, date) {
   const r = await getReg(regId), old = await activeAlloc(regId), nb = await Bed.findById(newBedId);
   if (!old) fail('No current bed to transfer from.');
   if (!nb) fail('Select the new bed.');
@@ -99,7 +103,8 @@ export async function releaseBed(user, regId) {
 
 /* ---------- stays ---------- */
 /** Extend a stay; also stretches the active bed allocation if the bed stays free. */
-export async function extendStay(user, regId, newTo, note) {
+export async function extendStay(user, regId, newTo, note) { const al = await activeAlloc(regId); return withBedLocks(al ? [al.bedId] : [], () => extendNow(user, regId, newTo, note)); }
+async function extendNow(user, regId, newTo, note) {
   const r = await getReg(regId), end = stayEnd(r), al = await activeAlloc(regId);
   if (!newTo || newTo <= end) fail(`New end date must be after the current end (${fd(end)}).`);
   if (al) {
@@ -107,7 +112,8 @@ export async function extendStay(user, regId, newTo, note) {
     if (c.length) fail(`The bed is reserved by ${await holderName(c[0])} from ${fd(c[0].from)}. Transfer this member to another bed first or choose an earlier date.`);
   }
   r.approvedTo = newTo; r.departure = newTo;
-  if (r.approvedFrom) r.approvedType = stayTypeFor(stayStart(r), newTo); else r.type = stayTypeFor(r.arrival, newTo);
+  const rules = await stayRules();
+  if (r.approvedFrom) r.approvedType = stayTypeFor(stayStart(r), newTo, rules); else r.type = stayTypeFor(r.arrival, newTo, rules);
   if (al) { al.to = newTo; await al.save(); }
   await Duty.updateMany({ regId, status: 'Active', to: end }, { to: newTo });
   hist(user, r, `Stay extended to ${fd(newTo)}${note ? ' — ' + note : ''}`); await r.save();
@@ -153,7 +159,8 @@ export async function undoCheckIn(user, regId) {
 }
 
 /** Undo a wrongly recorded departure: bed and sewa are restored where still possible. */
-export async function undoCheckOut(user, regId) {
+export async function undoCheckOut(user, regId) { const a = await Allocation.find({ regId }, { bedId: 1 }).lean(); return withBedLocks(a.map(x => x.bedId), () => undoCheckOutNow(user, regId)); }
+async function undoCheckOutNow(user, regId) {
   const r = await getReg(regId);
   if (r.status !== 'Checked Out') fail('This visit is not checked out.');
   const u = r.undo || {}, notes = [];
@@ -250,6 +257,7 @@ export async function giveDuty(user, regId, o, replace) {
   if (o.to < o.from) fail('Duty end cannot be before start.');
   if (o.to > stayEnd(r)) fail(`Duty cannot run past the approved stay end (${fd(stayEnd(r))}).`);
   const dp = await Department.findById(o.deptId); if (!dp) fail('Select a department.');
+  if (dp.archived) fail(`${dp.name} is archived — restore it in Sewa Departments first.`);
   const cur = await activeDuty(regId);
   if (cur && !replace) fail('This member already has an active duty. Use Change instead.');
   if (cur) {

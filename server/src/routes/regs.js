@@ -1,13 +1,18 @@
 /* Registrations (visits): pre-registration, walk-in, approval, reception, extensions, beds and sewa duties. */
 import { Router } from 'express';
-import { Registration, Member, Branch, Department } from '../models/index.js';
+import { Registration, Member, Branch, Department, Bed, Room } from '../models/index.js';
 import { need, isMgmt, canEdit } from '../middleware/auth.js';
 import { nid, log, hist, fail, forbidden, getRoles } from '../lib/core.js';
 import { body, check, oneOf, isDate, isDateTime } from '../lib/validate.js';
 import * as D from '../services/domain.js';
 import { today, nowLocal, fd } from '../../../shared/dates.js';
-import { TYPES, stayEnd, pendingExt, stayTypeFor } from '../../../shared/constants.js';
+import { TYPES, stayStart, stayEnd, pendingExt, stayTypeFor } from '../../../shared/constants.js';
 import { notify } from '../services/notify.js';
+import { regSchema } from '../../../shared/schemas.js';
+import { feature } from '../lib/config.js';
+import { archiveStamp, stayRules } from '../lib/core.js';
+import { cleanText } from '../../../shared/text.js';
+import { zfail } from '../lib/validate.js';
 
 const r = Router();
 
@@ -30,8 +35,10 @@ async function saveReg(req, id) {
   if (isC && !fam.includes(m.branchId)) fail('You can only register members of your own branch and its sub-branches.');
   const branchId = isC ? (fam.includes(v.branchId) ? v.branchId : m.branchId) : v.branchId;
   check({ ...v, branchId }, [['branchId', 'Registering branch', 'req'], ['arrival', 'Arrival date', 'req'], ['departure', 'Expected departure date', 'req'], ['purpose', 'Purpose of visit', 'req']]);
+  v.purpose = cleanText(v.purpose); zfail(regSchema, { ...v, branchId });
+  if (!(await Branch.exists({ _id: branchId, archived: null }))) fail('Choose a registering branch that is in use (not archived).');
   isDate(v.arrival, 'Arrival date'); isDate(v.departure, 'Expected departure date');
-  if (v.arrival && v.departure && v.departure >= v.arrival) v.type = stayTypeFor(v.arrival, v.departure); // type always follows the number of days
+  if (v.arrival && v.departure && v.departure >= v.arrival) v.type = stayTypeFor(v.arrival, v.departure, await stayRules()); // type always follows the number of days
   if (!(await Branch.exists({ _id: branchId }))) fail('Select a valid branch.');
   if (v.prefDept && !(await Department.exists({ _id: v.prefDept }))) fail('Select a valid department.');
   if (v.departure < v.arrival) fail('Departure date cannot be before arrival.');
@@ -69,7 +76,7 @@ r.post('/:id/submit', need('prereg'), loadReg, async (req, res) => {
   const g = req.reg; if (g.status !== 'Draft') fail('Only a draft can be submitted.');
   const c = await D.memberClash(g.memberId, g.arrival, g.departure, g._id);
   if (c) fail(`Overlaps with ${c._id} (${c.status}) for this member.`);
-  g.type = stayTypeFor(g.arrival, g.departure);
+  g.type = stayTypeFor(g.arrival, g.departure, await stayRules());
   g.status = 'Submitted'; g.submittedOn = nowLocal(); hist(req.user, g, 'Submitted for approval'); await g.save(); await log(req.user, `${g._id} submitted`);
   await notifyApprovers(req.user, g, await D.memberName(g.memberId), 'New request'); ok(res);
 });
@@ -82,6 +89,20 @@ r.post('/:id/reopen', need('prereg'), loadReg, async (req, res) => {
   g.status = 'Draft'; hist(req.user, g, 'Re-opened as draft for correction'); await g.save(); ok(res);
 });
 r.post('/:id/cancel', need('prereg'), loadReg, async (req, res) => { await D.cancelReg(req.user, req.reg._id, body(req, ['why']).why); ok(res); });
+/* archive a finished request (draft, rejected, cancelled or checked out): hidden from lists, kept in the member's history */
+r.post('/:id/archive', need('prereg'), loadReg, async (req, res) => {
+  if (!feature('archive')) forbidden('Archiving is switched off.');
+  const g = req.reg;
+  if (!['Draft', 'Rejected', 'Cancelled', 'Checked Out'].includes(g.status)) fail('Only a draft, rejected, cancelled or checked-out request can be archived.');
+  if (g.status === 'Checked Out' && !isMgmt(req.user)) fail('Only the Super Admin or Sewadar Manager can archive a completed stay.');
+  g.archived = archiveStamp(req.user, (req.body || {}).reason); hist(req.user, g, 'Archived' + (g.archived.reason ? ' — ' + g.archived.reason : '')); await g.save();
+  await log(req.user, `Archived request ${g._id}`); ok(res);
+});
+r.post('/:id/restore', need('prereg'), loadReg, async (req, res) => {
+  const g = req.reg; if (!g.archived) fail('This request is not archived.');
+  g.archived = undefined; hist(req.user, g, 'Restored from archive'); await g.save();
+  await log(req.user, `Restored request ${g._id}`); ok(res);
+});
 r.delete('/:id', need('prereg'), loadReg, async (req, res) => {
   if (!['Draft', 'Rejected', 'Cancelled'].includes(req.reg.status) && !isMgmt(req.user)) fail('Only the Super Admin or Sewadar Manager can delete a processed request.');
   await D.deleteReg(req.user, req.reg._id); ok(res);
@@ -108,13 +129,17 @@ r.post('/:id/approve', need('approvals'), loadReg, async (req, res) => {
   check(v, [['from', 'Approved stay from', 'req'], ['to', 'Approved stay to', 'req']]);
   isDate(v.from, 'Approved stay from'); isDate(v.to, 'Approved stay to');
   if (v.to < v.from) fail('Stay end cannot be before start.');
-  v.type = stayTypeFor(v.from, v.to); // type always follows the number of days
+  /* the dates suggest the type; with stay rules on, the approver may choose another — that is recorded and flagged */
+  const suggested = stayTypeFor(v.from, v.to, await stayRules());
+  const manual = feature('stayRules') && TYPES.includes(v.type) && v.type !== suggested;
+  if (!manual) v.type = suggested;
   const c = await D.memberClash(g.memberId, v.from, v.to, g._id);
   if (c) fail(`${await D.memberName(g.memberId)} has another live request (${c._id}) overlapping these dates.`);
   const dp = v.dept ? await Department.findById(v.dept).lean() : null;
   if (v.dept && !dp) fail('Select a valid department.');
-  Object.assign(g, { status: 'Approved', approvedFrom: v.from, approvedTo: v.to, approvedType: v.type, approvedDept: v.dept, approvedBy: req.user.name, remarks: v.remarks });
-  hist(req.user, g, `Approved (${fd(v.from)} – ${fd(v.to)}, ${v.type}, ${dp ? dp.name : 'no dept'}) — forwarded to reception${v.remarks ? '. ' + v.remarks : ''}`);
+  Object.assign(g, { status: 'Approved', approvedFrom: v.from, approvedTo: v.to, approvedType: v.type, approvedDept: v.dept, approvedBy: req.user.name, remarks: v.remarks,
+    typeOverride: manual ? { suggested, by: req.user.name, at: nowLocal() } : undefined });
+  hist(req.user, g, `Approved (${fd(v.from)} – ${fd(v.to)}, ${v.type}${manual ? ` — set manually, dates suggest ${suggested}` : ''}, ${dp ? dp.name : 'no dept'}) — forwarded to reception${v.remarks ? '. ' + v.remarks : ''}`);
   await g.save(); await log(req.user, `${g._id} Approved`);
   const name = await D.memberName(g.memberId);
   await notifyBranch(req.user, g, `Approved: ${g._id} — ${name}, ${fd(v.from)} – ${fd(v.to)} (${v.type})`);
@@ -152,7 +177,20 @@ r.post('/:id/extension-decision', need('approvals'), loadReg, async (req, res) =
 });
 
 /* ---------- reception ---------- */
-r.post('/:id/checkin', need('reception'), loadReg, async (req, res) => { const { dt } = body(req, ['dt']); isDateTime(dt, 'Date & time'); await D.checkIn(req.user, req.reg._id, dt); ok(res); });
+/* arrival: with "arrivalNeedsBed" on, someone without a bed gets one in the same step (free for the dates, right gender) */
+r.post('/:id/checkin', need('reception'), loadReg, async (req, res) => {
+  const { dt, bedId } = body(req, ['dt', 'bedId']); isDateTime(dt, 'Date & time');
+  const g = req.reg;
+  if (g.status === 'Approved' && feature('arrivalNeedsBed') && !(await D.activeAlloc(g._id))) {
+    if (!bedId) fail('Assign a bed before confirming the arrival.');
+    const m = await Member.findById(g.memberId).lean(), bed = await Bed.findById(bedId).lean(), room = bed && await Room.findById(bed.roomId).lean();
+    if (!bed || !room) fail('Select a bed.');
+    if (room.gender && room.gender !== 'Any' && m && room.gender !== m.gender) fail(`${room.name} is a ${room.gender} room — choose a bed in a ${m.gender} or mixed room.`);
+    const day = dt.slice(0, 10), from = day > stayStart(g) ? day : stayStart(g);
+    await D.allocate(req.user, g._id, bedId, from, stayEnd(g), 'Allocated at arrival');
+  }
+  await D.checkIn(req.user, g._id, dt); ok(res);
+});
 r.post('/:id/checkout', need('reception'), loadReg, async (req, res) => { const { dt } = body(req, ['dt']); isDateTime(dt, 'Date & time'); await D.checkOut(req.user, req.reg._id, dt); ok(res); });
 r.post('/:id/undo-checkin', need('reception'), loadReg, async (req, res) => { await D.undoCheckIn(req.user, req.reg._id); ok(res); });
 r.post('/:id/undo-checkout', need('reception'), loadReg, async (req, res) => { await D.undoCheckOut(req.user, req.reg._id); ok(res); });

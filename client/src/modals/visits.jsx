@@ -119,8 +119,8 @@ export function inchargeDecide(app, id) {
     pre={<div className="note"><b>{v.guest.name}</b>{v.guest.organisation ? ` (${v.guest.organisation})` : ''} wants to meet <b>{vMeet(D, v)}</b> on <b>{vWhen(v)}</b> · {v.guest.people || 1} person(s) · {vVehicle(v)}<br />Purpose: {v.guest.purpose}</div>}
     values={{ date: v.date, time: v.time, duration: String(v.duration || 60), note: '' }}
     fields={[{ n: 'date', l: 'Date', t: 'date', req: 1 }, { n: 'time', l: 'Time', t: 'time', req: 1 }, { n: 'duration', l: 'Duration', t: 'select', opts: [['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([a, b]) => ({ v: a, l: b })) },
-      { n: 'note', l: 'Note (required when declining)', t: 'textarea', full: 1 }]}
-    buttons={[{ label: 'Decline', cls: 'bad', run: x => x.note ? mutate(() => api.post(`/visits/${id}/incharge`, { accept: false, note: x.note }), 'Appointment declined') : 'Please give a reason for declining.' },
+      { n: 'note', l: 'Note — needed only if you decline', t: 'textarea', full: 1, ph: 'Optional when accepting' }]}
+    buttons={[{ label: 'Decline…', cls: 'dng', run: x => x.note ? mutate(() => api.post(`/visits/${id}/incharge`, { accept: false, note: x.note }), 'Appointment declined') : (document.getElementById('f-note')?.focus(), 'To decline, write a short reason in the note, then press Decline again.') },
       { label: 'Accept appointment', cls: 'ok', run: x => mutate(() => api.post(`/visits/${id}/incharge`, { ...x, accept: true }), 'Accepted — the host will finalise parking and office') }]} />);
 }
 

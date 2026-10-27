@@ -27,7 +27,7 @@ export default function Approvals() {
     ['', r => ed ? <><Btn cls="ok" onClick={() => extDecide(app, r.id, true)}>Approve</Btn><Btn cls="bad" onClick={() => extDecide(app, r.id, false)}>Reject</Btn></> : null]]} />;
   if (tab === 'd') b = <Table rows={R.filter(r => ['Approved', 'Checked In', 'Checked Out', 'Rejected'].includes(r.status)).sort(desc(D.lastActivity)).slice(0, 60)} cols={[
     ['Last update', r => relTime(D.lastActivity(r))],
-    ['Request', r => r.id], ['Member', r => <>{D.mName(r.memberId)}<br /><small>{D.bName(r.branchId)}</small></>], ['Decision', r => <Badge s={r.status === 'Rejected' ? 'Rejected' : 'Approved'} />], ['Approved stay', r => r.approvedFrom ? `${fd(r.approvedFrom)} – ${fd(r.approvedTo)}` : '—'], ['Remarks', r => r.remarks || ''],
+    ['Request', r => r.id], ['Member', r => <>{D.mName(r.memberId)}<br /><small>{D.bName(r.branchId)}</small></>], ['Decision', r => <><Badge s={r.status === 'Rejected' ? 'Rejected' : 'Approved'} />{r.typeOverride ? <><br /><span className="b warn" title={`Dates suggest ${r.typeOverride.suggested}`}>Type set manually</span></> : null}</>], ['Approved stay', r => r.approvedFrom ? `${fd(r.approvedFrom)} – ${fd(r.approvedTo)}` : '—'], ['Remarks', r => r.remarks || ''],
     ['', r => <><Btn onClick={() => regView(app, r.id)}>View</Btn>{ed && r.status === 'Approved' ? <Btn onClick={() => apRevert(app, r.id)}>Revert to pending</Btn> : null}{ed && r.status === 'Rejected' ? <Btn onClick={() => apReconsider(app, r.id)}>Reconsider</Btn> : null}</>]]} />;
   return <>
     <PageHead title="Approval Management" sub="Review requests, confirm dates and type, assign sewa department, then forward to reception. Newest requests are listed first." />

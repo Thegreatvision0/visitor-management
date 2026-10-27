@@ -387,3 +387,25 @@ b.res{color:var(--ok)}b.nonres{color:var(--ink-2)}
  table.rt tr{position:relative}td.tck{position:absolute!important;right:10px;top:8px;width:auto!important;padding:0!important;min-height:0;z-index:1}td.tck::before{display:none}td.tck+td{border-top:0}
 }
 @media print{.ttools,.pager,.fchips,.tck{display:none!important}}
+
+/* DEMO mode ribbon */
+.demo-ribbon{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:90;background:#b45309;color:#fff;font-weight:700;font-size:12.5px;padding:5px 14px;border-radius:99px;box-shadow:var(--shadow-lg);pointer-events:none;letter-spacing:.02em;max-width:calc(100% - 24px);text-align:center}
+@media print{.demo-ribbon{display:none}}
+
+/* "⋯" row menu */
+.rmenu{position:relative;display:inline-block}.rmenu-b{font-weight:700;letter-spacing:.08em;min-width:34px}
+.rmenu-dd{position:absolute;right:0;top:calc(100% + 4px);z-index:40;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-lg);min-width:180px;padding:4px;display:grid}
+.rmenu-dd button{border:0;background:none;text-align:left;padding:8px 10px;border-radius:6px;color:var(--ink);font-size:13.5px}
+.rmenu-dd button:hover,.rmenu-dd button:focus-visible{background:var(--pri-l);outline:0}.rmenu-dd button.dng{color:var(--bad)}.rmenu-dd button.dng:hover{background:var(--badl)}
+
+/* ⓘ definition marker */
+.help{display:inline-block;font-style:normal;font-size:12px;color:var(--muted);cursor:help;margin-left:2px}
+.small-help{font-size:12.5px;margin:-4px 0 10px}
+.warn-t{color:var(--warn)}
+
+/* KPI label never runs under the icon; long labels wrap instead of being cut */
+.kpi .kl{padding-right:44px;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+/* active page in the sidebar: clearly marked, also in the narrow icon-only sidebar */
+.nav.on{background:#24467e;box-shadow:inset 3px 0 0 var(--brand)}.nav.on svg{color:#fff}
+@media (min-width:901px) and (max-width:1180px){.nav.on{background:#2a5294}}
+.masked{white-space:nowrap}.linkb.sm{font-size:12px;font-weight:600;margin-left:4px}.perm-extra td{background:var(--card-2)}

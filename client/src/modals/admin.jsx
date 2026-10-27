@@ -71,12 +71,20 @@ export function shiftEdit(app, name) {
 export const setPerm = (app, role, page, value) => app.run(() => app.api.put('/admin/perms', { role, page, value }), 'Access updated');
 export const permReset = app => confirm(app, 'Reset access', 'Restore every role to its default page access?', 'Reset', () => app.run(() => app.api.post('/admin/perms/reset'), 'Access reset to defaults'));
 
-export const admClearPeople = app => confirm(app, 'Delete all members & visits', <>Delete <b>all {app.data.members.length} members</b>, {app.data.regs.length} requests, bed allocations, sewa duties and attendance? Branches, departments, buildings, rooms, beds, users and settings are kept.</>, 'Delete people & visits',
-  () => app.run(() => app.api.post('/admin/clear-people'), 'All members and visits deleted'), true);
-export const admClearAll = app => confirm(app, 'Delete everything', 'Empty the whole system — members, visits, branches, departments and every site, building, room and bed? Users, access settings and option lists are kept. You can then add your own data by hand.', 'Delete everything',
-  async () => { const e = await app.run(() => app.api.post('/admin/clear-all'), 'System emptied — start adding your own data'); if (!e) app.setFs({ 'acc.site': '', 'acc.bld': '' }); }, true);
-export const admReset = app => confirm(app, 'Reset data', 'Replace all data with fresh sample data? Every change made so far will be lost. Sign-in users are kept.', 'Reset',
-  () => app.run(() => app.api.post('/admin/reset-sample'), 'Sample data restored'), true);
+/* Danger zone (DEMO mode or FEATURES=dangerZone=on): type DELETE, then confirm once more. */
+function dangerAction(app, title, what, path, done, after) {
+  app.openModal(<FormModal title={title}
+    pre={<div className="alert bad"><span>{what} <b>This cannot be undone.</b> Download a JSON backup first if you may need the data again.</span></div>}
+    fields={[{ n: 'confirm', l: 'Type DELETE to continue', req: 1, ph: 'DELETE', full: 1 }]}
+    buttons={[{ label: 'Continue', cls: 'bad', run: v => {
+      if (v.confirm !== 'DELETE') return 'Type DELETE in capital letters to continue.';
+      confirm(app, 'Are you sure?', <>{title}: last chance to stop.</>, title, async () => { const e = await app.run(() => app.api.post(path, { confirm: 'DELETE' }), done); if (!e && after) after(); }, true);
+      return null;
+    } }]} />);
+}
+export const admClearPeople = app => dangerAction(app, 'Delete all members & visits', <>Delete <b>all {app.data.members.length} members</b>, {app.data.regs.length} requests, bed allocations, sewa duties, attendance and guest visits. Branches, departments, buildings, rooms, beds, users and settings are kept.</>, '/admin/clear-people', 'All members and visits deleted');
+export const admClearAll = app => dangerAction(app, 'Delete everything', 'Empty the whole system — members, visits, branches, departments and every site, building, room and bed. Users, access settings and option lists are kept.', '/admin/clear-all', 'System emptied — start adding your own data', () => app.setFs({ 'acc.site': '', 'acc.bld': '' }));
+export const admReset = app => dangerAction(app, 'Reset to sample data', 'Replace all data with fresh sample data. Every change made so far will be lost. Sign-in users are kept.', '/admin/reset-sample', 'Sample data restored');
 
 export async function admExport(app) {
   try {
@@ -124,3 +132,12 @@ export const admNormalize = app => confirm(app, 'Clean up names',
 /* guest visit permissions per role */
 export const setVisitCap = (app, role, cap, on) => app.run(() => app.api.put('/admin/visit-caps', { role, cap, on }), 'Guest visit access updated');
 export const visitCapsReset = app => confirm(app, 'Reset guest visit access', 'Restore every role to its default guest visit permissions? Extra permissions given to individual users are kept.', 'Reset', () => app.run(() => app.api.post('/admin/visit-caps/reset'), 'Guest visit access reset'));
+
+/** Stay-type day limits (Admin → Lists & options). */
+export function stayRulesEdit(app) {
+  const sr = app.data.lists.stayRules || { shortMax: 10, monthlyMax: 30 };
+  app.openModal(<FormModal title="Stay-type day limits" values={{ shortMax: String(sr.shortMax), monthlyMax: String(sr.monthlyMax) }}
+    pre={<div className="note">Used to suggest the stay type for new requests and approvals. Stays already approved keep their type.</div>}
+    fields={[{ n: 'shortMax', l: 'Short-Term: up to how many days', t: 'number', req: 1 }, { n: 'monthlyMax', l: 'Monthly: up to how many days', t: 'number', req: 1, hint: v => `Longer than ${v.monthlyMax || '…'} days = Long-Term` }]}
+    buttons={[{ label: 'Save', run: v => app.mutate(() => app.api.put('/admin/stay-rules', { shortMax: Number(v.shortMax), monthlyMax: Number(v.monthlyMax) }), 'Stay-type limits saved') }]} />);
+}

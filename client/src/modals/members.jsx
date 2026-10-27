@@ -1,12 +1,13 @@
 /* Member Master and Branch dialogs. */
 import { useApp } from '../context.jsx';
 import { FormModal, Modal, CloseBtn, Info, confirm } from '../components/Modal.jsx';
-import { Avatar, Badge, Table, Btn, KV, Chip } from '../components/ui.jsx';
+import { Avatar, Badge, Table, Btn, KV, Chip, Mobile } from '../components/ui.jsx';
 import { fd, fdt, ageOf, today } from '@shared/dates.js';
 import { TYPES, GENDERS, stayStart, stayEnd, stayType, LIVE } from '@shared/constants.js';
 import { regNew, regView } from './regs.jsx';
 import DISTRICTS from '@shared/districts.js';
-import { personName, placeName } from '@shared/text.js';
+import { personName, placeName, cleanText } from '@shared/text.js';
+import { memberSchema, branchSchema, firstIssue } from '@shared/schemas.js';
 
 /* district suggestions for the chosen state (any other name can still be typed) */
 const STATE_KEYS = Object.keys(DISTRICTS);
@@ -19,7 +20,7 @@ const savedAs = (x, fn) => { const c = fn(x || ''); return x && c !== String(x).
 function MemberForm({ id, after }) {
   const app = useApp(), { D, me, api, mutate } = app;
   const ex = id ? D.member(id) : null, isC = me.role === 'coordinator', myB = D.branch(me.branchId) || {};
-  const fields = [{ n: 'name', l: 'Full name', req: 1, hint: v => savedAs(v.name, personName) }, { n: 'mobile', l: 'Mobile number', t: 'tel', req: 1, ph: '10-digit mobile' }, { n: 'dob', l: 'Date of birth', t: 'date', req: 1 },
+  const fields = [{ n: 'name', l: 'Full name', req: 1, hint: v => savedAs(v.name, personName) }, { n: 'mobile', l: 'Mobile number', t: 'tel', req: 1, ph: '10-digit mobile', hint: v => dupHint(v.mobile) }, { n: 'dob', l: 'Date of birth', t: 'date', req: 1 },
     { n: 'gender', l: 'Gender', t: 'select', opts: GENDERS, req: 1, ph: 'Select' }, { n: 'type', l: 'Member type', t: 'select', opts: TYPES, req: 1 },
     { n: 'state', l: 'State', t: 'select', opts: D.STATES, req: 1, ph: 'Select state first' },
     { n: 'branchId', l: 'Branch / sub-branch', t: 'select', req: 1, opts: v => D.branchOpts().filter(o => !v.state || o.state === v.state),
@@ -27,8 +28,11 @@ function MemberForm({ id, after }) {
     { n: 'district', l: 'District', req: 1, list: districtList, ph: 'Type or pick from the list', hint: v => savedAs(v.district, placeName) || (districtList(v) ? `${DISTRICTS[v.state].length} districts of ${v.state} — start typing to pick one.` : '') },
     { n: 'address', l: 'Address', t: 'textarea', req: 1, full: 1 }, { n: 'emName', l: 'Emergency contact name', req: 1, hint: v => savedAs(v.emName, personName) }, { n: 'emPhone', l: 'Emergency contact mobile', t: 'tel', req: 1 },
     { n: 'emRel', l: 'Relation', t: 'select', opts: D.RELS, ph: 'Select' }, { n: 'photo', l: 'Photo (optional)', t: 'photo', full: 1 }];
+  /* warn while typing when the number already belongs to someone (the server refuses duplicates too) */
+  const dupHint = mob => { if (!D.feature('duplicateMobile') || !/^\d{10}$/.test(mob || '')) return ''; const d = D.allMembers().find(x => x.mobile === mob && x.id !== (ex && ex.id)); return d ? <b className="warn-t">⚠ Already used by {d.name} ({d.id}){d.archived ? ' — archived' : ''}. One Member ID per person: open that record instead.</b> : ''; };
   const values = ex ? { ...ex } : { type: 'Short-Term', branchId: isC ? me.branchId : '', state: isC ? (myB.state || 'Punjab') : 'Punjab', district: isC ? (myB.district || '') : '' };
   return <FormModal title={ex ? `Edit member — ${ex.id}` : 'Add member'} wide fields={fields} values={values} datalists={districtLists()}
+    check={v => firstIssue(memberSchema, { ...v, name: personName(v.name), emName: personName(v.emName), district: placeName(v.district), address: cleanText(v.address) })}
     onChange={(n, v) => { if (n === 'branchId') { const b = D.branch(v); if (b) return { state: b.state, district: b.district }; } }} /* changing state clears a branch from another state */
     buttons={[{
       label: ex ? 'Save changes' : 'Create member', run: async v => {
@@ -46,20 +50,20 @@ export const memberEdit = (app, id) => app.openModal(<MemberForm id={id} />);
 function MemberView({ id }) {
   const app = useApp(), { D, data } = app, m = D.member(id);
   if (!m) return <Info title="Member">This member no longer exists.</Info>;
-  const rs = data.regs.filter(r => r.memberId === id).sort((a, b) => stayStart(b).localeCompare(stayStart(a)));
+  const rs = data.regs.concat(D.archivedRegs()).filter(r => r.memberId === id).sort((a, b) => stayStart(b).localeCompare(stayStart(a))); // archived requests stay in the history
   const als = data.allocs.filter(a => a.memberId === id).sort((a, b) => b.from.localeCompare(a.from)), dus = data.duties.filter(x => x.memberId === id).sort((a, b) => b.from.localeCompare(a.from));
   const st = D.memberStatus(m);
   return <Modal title={<>{m.name} <small>{m.id}</small></>} wide footer={<>
-    {m.archived ? <>{D.canEditMember(m) ? <button className="btn ok" onClick={() => memberRestore(app, id)}>Restore member</button> : null}{app.me.role === 'superadmin' ? <button className="btn dng" onClick={() => memberPurge(app, id)}>Delete permanently</button> : null}</>
+    {m.archived ? <>{D.canEditMember(m) ? <button className="btn ok" onClick={() => memberRestore(app, id)}>Restore member</button> : null}{app.me.role === 'superadmin' && !D.hasStayed(id) ? <button className="btn dng" onClick={() => memberPurge(app, id)}>Delete permanently</button> : null}</>
       : <>{D.canEditMember(m) ? <><button className="btn dng" onClick={() => memberDelete(app, id)}>Archive member</button><button className="btn" onClick={() => memberEdit(app, id)}>Edit member</button></> : null}
         {D.canEdit('prereg') ? <button className="btn pri" onClick={() => regNew(app, id)}>New pre-registration</button> : null}</>}
     <CloseBtn /></>}>
     {m.archived ? <div className="alert"><span><b>Archived</b> on {fdt(m.archived.on)} by {m.archived.by}{m.archived.reason ? ' — ' + m.archived.reason : ''}. The Member ID and all history are kept; restore the member to use them again.</span></div> : null}
     <div className="who" style={{ marginBottom: 12 }}><Avatar m={m} /><div className="chips"><Badge s={m.type} />{st ? <Badge s={st} /> : null}{m.sample ? <Chip>Sample record</Chip> : null}</div></div>
-    <KV items={[['Mobile', m.mobile], ['Age / DOB', `${ageOf(m.dob)} yrs · ${fd(m.dob)}`], ['Gender', m.gender], ['Branch', D.bName(m.branchId)], ['State / District', `${m.state} / ${m.district}`],
-      ['Emergency contact', `${m.emName} ${m.emRel ? '(' + m.emRel + ')' : ''} · ${m.emPhone}`], ['Address', m.address, true]]} />
+    <KV items={[['Mobile', <Mobile m={m} />], ['Age / DOB', `${ageOf(m.dob)} yrs · ${fd(m.dob)}`], ['Gender', m.gender], ['Branch', D.bName(m.branchId)], ['State / District', `${m.state} / ${m.district}`],
+      ['Emergency contact', <>{m.emName} {m.emRel ? '(' + m.emRel + ')' : ''} · <Mobile m={m} field="emPhone" /></>], ['Address', m.address, true]]} />
     <h3>Visit history</h3>
-    <Table cols={[['Request', r => r.id], ['Stay', r => `${fd(stayStart(r))} – ${fd(stayEnd(r))}`], ['Type', r => <Badge s={stayType(r)} />], ['Actual', r => <>{fdt(r.actualIn)}<br /><small>{r.actualOut ? fdt(r.actualOut) : ''}</small></>], ['Status', r => <Badge s={r.status} />], ['', r => <Btn onClick={() => regView(app, r.id)}>Details</Btn>]]} rows={rs} empty="No visits recorded." />
+    <Table cols={[['Request', r => r.id], ['Stay', r => `${fd(stayStart(r))} – ${fd(stayEnd(r))}`], ['Type', r => <Badge s={stayType(r)} />], ['Actual', r => <>{fdt(r.actualIn)}<br /><small>{r.actualOut ? fdt(r.actualOut) : ''}</small></>], ['Status', r => <><Badge s={r.status} />{r.archived ? <> <Badge s="Archived" /></> : null}</>], ['', r => <Btn onClick={() => regView(app, r.id)}>Details</Btn>]]} rows={rs} empty="No visits recorded." />
     <h3 style={{ marginTop: 14 }}>Accommodation history</h3>
     <Table cols={[['Bed', a => D.allocBedText(a)], ['From', a => fd(a.from)], ['To', a => fd(a.to)], ['Note', a => a.active ? a.reason : (a.endReason || 'Closed')]]} rows={als} empty="No bed allocations." />
     <h3 style={{ marginTop: 14 }}>Sewa history</h3>
@@ -114,6 +118,7 @@ function BranchForm({ id, parentId }) {
   const par = parentId ? D.branch(parentId) : null;
   const values = ex ? { ...ex, parentId: ex.parentId || '' } : par ? { parentId: par.id, state: par.state, district: par.district } : { state: isC ? (D.branch(me.branchId) || {}).state : 'Punjab', parentId: isC ? me.branchId : '' };
   return <FormModal title={ex ? `Edit branch — ${ex.name}` : par ? `Add sub-branch under ${par.name}` : 'Add branch'} values={values} datalists={districtLists()}
+    check={v => firstIssue(branchSchema, { ...v, coordinator: personName(v.coordinator), district: placeName(v.district) })}
     fields={[{ n: 'name', l: 'Branch name (must be unique)', req: 1 },
       { n: 'parentId', l: 'Parent branch', t: 'select', opts: parents, ph: isC ? undefined : '— None (main branch) —', dis: own, hidden: own,
         hint: 'Choose a parent to make this a sub-branch — for dividing a large branch into smaller ones.' },
@@ -137,7 +142,7 @@ function BranchView({ id }) {
       b.phones && b.phones.replace(/\D/g, '').slice(-10) !== b.phone ? ['Phone numbers', b.phones] : null,
       b.email ? ['Email', <a href={'mailto:' + b.email}>{b.email}</a>] : null, b.address ? ['Address', b.address, true] : null]} />
     <h3>Registered members ({ms.length})</h3>
-    <Table cols={[['ID', m => m.id], ['Name', m => m.name], ['Mobile', m => m.mobile], ['Type', m => <Badge s={m.type} />], ['Status', m => D.memberStatus(m) ? <Badge s={D.memberStatus(m)} /> : '—']]} rows={ms} />
+    <Table cols={[['ID', m => m.id], ['Name', m => m.name], ['Mobile', m => <Mobile m={m} />], ['Type', m => <Badge s={m.type} />], ['Status', m => D.memberStatus(m) ? <Badge s={D.memberStatus(m)} /> : '—']]} rows={ms} />
     <h3 style={{ marginTop: 14 }}>Pre-registration &amp; arrivals ({rs.length})</h3>
     <Table cols={[['Request', r => r.id], ['Member', r => D.mName(r.memberId)], ['Stay', r => `${fd(stayStart(r))} – ${fd(stayEnd(r))}`], ['Arrived', r => fdt(r.actualIn)], ['Status', r => <Badge s={r.status} />]]} rows={rs} />
   </Modal>;

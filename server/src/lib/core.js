@@ -75,3 +75,10 @@ export function serialWrites(req, res, next) {
 }
 
 export const out = d => { if (!d) return d; const { _id, ...rest } = d; return { id: _id, ...rest }; };
+
+/* ---- Archive (soft delete) ---- */
+/** { on, by, reason } stamp put on an archived record. */
+export const archiveStamp = (user, reason) => ({ on: nowLocal(), by: who(user), reason: String(reason || '').replace(/\s+/g, ' ').trim().slice(0, 200) });
+
+/** Stay-type day limits (Admin → Lists & options). */
+export async function stayRules() { const s = await getSettings(); const r = (s.lists && s.lists.stayRules) || {}; return { shortMax: r.shortMax || 10, monthlyMax: r.monthlyMax || 30 }; }

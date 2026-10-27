@@ -5,11 +5,14 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 const opts = { versionKey: false, minimize: false };
 const S = { type: String };
+/* set instead of deleting: hidden from lists and forms, kept for history, can be restored */
+const Archived = { type: new Schema({ on: S, by: S, reason: S }, { _id: false }), default: undefined };
 
 const Branch = model('Branch', new Schema({
   _id: S, name: S, state: S, district: S, coordinator: S, phone: S, sample: Boolean,
   parentId: { type: String, default: '' }, // set on a sub-branch: the branch it was split from
-  address: S, email: S, phones: S // contact details (phones = every number, as listed)
+  address: S, email: S, phones: S, // contact details (phones = every number, as listed)
+  archived: Archived
 }, opts));
 
 const Member = model('Member', new Schema({
@@ -30,7 +33,8 @@ const Registration = model('Registration', new Schema({
   submittedOn: S, // when it last entered the approval queue (newest-first sorting)
   undo: { type: new Schema({ allocId: S, bedWasCleaning: Boolean, dutyId: S, dutyTo: S }, { _id: false }), default: undefined },
   history: { type: [History], default: [] }, exts: { type: [Ext], default: [] },
-  createdBy: S, createdOn: S
+  createdBy: S, createdOn: S, archived: Archived,
+  typeOverride: { type: new Schema({ suggested: S, by: S, at: S }, { _id: false }), default: undefined } // approver chose a stay type other than the one the dates suggest
 }, opts));
 
 const Allocation = model('Allocation', new Schema({
@@ -49,7 +53,7 @@ const attSchema = new Schema({ date: S, regId: S, status: S, deptId: S }, opts);
 attSchema.index({ date: 1, regId: 1 }, { unique: true });
 const Attendance = model('Attendance', attSchema);
 
-const Department = model('Department', new Schema({ _id: S, name: S, supervisor: S, active: Boolean }, opts));
+const Department = model('Department', new Schema({ _id: S, name: S, supervisor: S, active: Boolean, archived: Archived }, opts));
 const Site = model('Site', new Schema({ _id: S, name: S }, opts));
 const Building = model('Building', new Schema({ _id: S, siteId: S, name: S, floors: [String] }, opts));
 const Room = model('Room', new Schema({ _id: S, buildingId: { type: String, index: true }, floor: S, name: S, gender: S }, opts));
@@ -67,7 +71,8 @@ const AuditLog = model('AuditLog', new Schema({ at: { type: String, index: true 
 /* Single settings document (_id 'app'): editable lists, saved role access, names of deleted departments. */
 const Settings = model('Settings', new Schema({
   _id: S,
-  lists: { states: [String], rels: [String], shifts: [new Schema({ name: S, time: S }, { _id: false })], offices: [String] },
+  lists: { states: [String], rels: [String], shifts: [new Schema({ name: S, time: S }, { _id: false })], offices: [String],
+    stayRules: { shortMax: { type: Number, default: 10 }, monthlyMax: { type: Number, default: 30 } } }, // stay type from the number of days
   perms: { type: Schema.Types.Mixed, default: null },
   visitCaps: { type: Schema.Types.Mixed, default: null }, // guest visit permissions per role (null = defaults)
   tomb: { type: Schema.Types.Mixed, default: {} }

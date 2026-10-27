@@ -1,12 +1,14 @@
 /* Members and branches. */
 import { Router } from 'express';
-import { Member, Branch, Registration, Settings } from '../models/index.js';
+import { Member, Branch, Registration, Settings, User } from '../models/index.js';
+import { feature } from '../lib/config.js';
 import { need } from '../middleware/auth.js';
-import { nid, log, fail, notFound, forbidden, getSettings } from '../lib/core.js';
-import { body, check, oneOf, isDate } from '../lib/validate.js';
+import { nid, log, fail, notFound, forbidden, getSettings, archiveStamp } from '../lib/core.js';
+import { body, check, oneOf, isDate, zfail } from '../lib/validate.js';
+import { memberSchema, branchSchema } from '../../../shared/schemas.js';
 import { deleteMember, deleteBranch, branchFamily } from '../services/domain.js';
 import { today, nowLocal } from '../../../shared/dates.js';
-import { TYPES, GENDERS, LIVE } from '../../../shared/constants.js';
+import { TYPES, GENDERS, LIVE, isMasked } from '../../../shared/constants.js';
 import { personName, placeName, cleanText } from '../../../shared/text.js';
 
 const r = Router();
@@ -15,14 +17,17 @@ const r = Router();
 const MEMBER_FIELDS = ['name', 'mobile', 'dob', 'gender', 'branchId', 'type', 'state', 'district', 'address', 'emName', 'emPhone', 'emRel', 'photo'];
 async function saveMember(req, id) {
   const v = body(req, MEMBER_FIELDS), u = req.user;
+  /* a masked number sent back unchanged (98XXXXX280) keeps the saved one */
+  if (id && (isMasked(v.mobile) || isMasked(v.emPhone))) { const cur = await Member.findById(id).lean(); if (cur) { if (isMasked(v.mobile)) v.mobile = cur.mobile; if (isMasked(v.emPhone)) v.emPhone = cur.emPhone; } }
   /* data hygiene: names in proper case with single spaces, placeholders such as "null" dropped */
   Object.assign(v, { name: personName(v.name), emName: personName(v.emName), district: placeName(v.district), address: cleanText(v.address), mobile: String(v.mobile).replace(/\D/g, '').slice(-10), emPhone: String(v.emPhone).replace(/\D/g, '').slice(-10) });
+  zfail(memberSchema, v);
   check(v, [['name', 'Full name', 'req'], ['mobile', 'Mobile number', 'req tel'], ['dob', 'Date of birth', 'req'], ['gender', 'Gender', 'req'], ['branchId', 'Branch', 'req'],
     ['type', 'Member type', 'req'], ['state', 'State', 'req'], ['district', 'District', 'req'], ['address', 'Address', 'req'], ['emName', 'Emergency contact name', 'req'], ['emPhone', 'Emergency contact mobile', 'req tel']]);
   isDate(v.dob, 'Date of birth'); oneOf(v.gender, GENDERS, 'gender'); oneOf(v.type, TYPES, 'member type');
   if (v.photo && (!String(v.photo).startsWith('data:image/') || v.photo.length > 400000)) fail('The photo is not a valid image or is too large.');
   if (v.dob > today()) fail('Date of birth cannot be in the future.');
-  if (!(await Branch.exists({ _id: v.branchId }))) fail('Select a valid branch.');
+  if (!(await Branch.exists({ _id: v.branchId, archived: null }))) fail('Select a valid branch (archived branches cannot be chosen).');
   const ex = id ? await Member.findById(id) : null;
   if (id && !ex) notFound('Member');
   if (u.role === 'coordinator') {
@@ -41,6 +46,12 @@ async function saveMember(req, id) {
   await log(u, `${ex ? 'Updated' : 'Created'} member ${m._id} (${m.name})`);
   return m._id;
 }
+/* Reveal a masked member's numbers — written to the audit log (who, whose, when). */
+r.post('/members/:id/reveal', need('dashboard', 'v'), async (req, res) => { // anyone signed in; every reveal is in the audit log
+  const m = await memberInScope(req);
+  await log(req.user, `Revealed mobile numbers of ${m._id} (${m.name})`);
+  res.json({ mobile: m.mobile, emPhone: m.emPhone });
+});
 r.post('/members', need('members'), async (req, res) => res.json({ id: await saveMember(req, null) }));
 r.put('/members/:id', need('members'), async (req, res) => res.json({ id: await saveMember(req, req.params.id) }));
 /* "Delete" archives the member: the Member ID, visits, bed and sewa history are kept, the ID is never reused,
@@ -56,6 +67,7 @@ r.delete('/members/:id', need('members'), async (req, res) => {
   if (req.query.permanent === '1') {
     if (req.user.role !== 'superadmin') forbidden('Only the Super Admin can permanently delete a member.');
     if (!m.archived) fail('Archive the member first; only archived members can be deleted permanently.');
+    if (await Registration.exists({ memberId: m._id, actualIn: { $nin: [null, ''] } })) fail(`${m.name} has stayed at Nurmahal — members with stay history are kept for the records and can only be archived.`);
     await deleteMember(req.user, m._id);
     return res.json({ ok: true });
   }
@@ -94,10 +106,12 @@ async function saveBranch(req, id) {
   if (v.parentId) {
     const p = await Branch.findById(v.parentId).lean();
     if (!p) fail('Select a valid parent branch.');
+    if (p.archived) fail('The parent branch is archived — restore it first.');
     if (b && (await branchFamily(b._id)).includes(p._id)) fail('A branch cannot be placed under itself or one of its own sub-branches.');
     v.state = p.state; // a sub-branch is always in its parent's state
   }
   check(v, [['name', 'Branch name', 'req'], ['state', 'State', 'req'], ['district', 'District', 'req'], ['coordinator', 'Coordinator name', 'req'], ['phone', 'Coordinator mobile', 'req tel']]);
+  zfail(branchSchema, v);
   if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) fail('Enter a valid email address.');
   v.sample = false; // edited by a person → no longer sample data
   /* branch names are unique across the whole system (any state, branch or sub-branch) */
@@ -112,6 +126,27 @@ async function saveBranch(req, id) {
   await log(req.user, `${id ? 'Updated' : 'Added'} branch ${v.name}`);
   return b._id;
 }
+/* archive / restore a branch: hidden from lists and forms, members and history stay linked */
+r.post('/branches/:id/archive', need('branches'), async (req, res) => {
+  if (!feature('archive')) forbidden('Archiving is switched off.');
+  const b = await Branch.findById(req.params.id); if (!b) notFound('Branch');
+  if (req.user.role === 'coordinator' && (b._id === req.user.branchId || !(await branchFamily(req.user.branchId)).includes(b._id))) forbidden('You can only archive sub-branches of your own branch.');
+  const subs = await Branch.find({ parentId: b._id, archived: null }, { name: 1 }).lean();
+  if (subs.length) fail(`${b.name} has sub-branch(es) in use: ${subs.map(x => x.name).join(', ')}. Archive or move them first.`);
+  const live = await Registration.countDocuments({ branchId: b._id, status: { $in: LIVE }, archived: null });
+  if (live) fail(`${b.name} has ${live} open request(s). Finish, reject or cancel them first.`);
+  const users = await User.find({ branchId: b._id }, { name: 1 }).lean();
+  if (users.length) fail(`Sign-in user(s) belong to ${b.name}: ${users.map(x => x.name).join(', ')}. Move them to another branch first (Admin → Users).`);
+  b.archived = archiveStamp(req.user, (req.body || {}).reason); await b.save();
+  await log(req.user, `Archived branch ${b.name}`); res.json({ ok: true });
+});
+r.post('/branches/:id/restore', need('branches'), async (req, res) => {
+  const b = await Branch.findById(req.params.id); if (!b) notFound('Branch');
+  if (req.user.role === 'coordinator' && !(await branchFamily(req.user.branchId)).includes(b._id)) forbidden('You can only manage your own branch family.');
+  if (b.parentId && (await Branch.exists({ _id: b.parentId, archived: { $ne: null } }))) fail('Restore its parent branch first.');
+  b.archived = undefined; await b.save();
+  await log(req.user, `Restored branch ${b.name}`); res.json({ ok: true });
+});
 r.post('/branches', need('branches'), async (req, res) => res.json({ id: await saveBranch(req, null) }));
 r.put('/branches/:id', need('branches'), async (req, res) => res.json({ id: await saveBranch(req, req.params.id) }));
 r.delete('/branches/:id', need('branches'), async (req, res) => {

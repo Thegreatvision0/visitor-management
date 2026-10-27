@@ -3,12 +3,13 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { User, Settings, Branch, Department, Member, Registration, Allocation, Duty, Attendance, Bed, DATA_MODELS } from '../models/index.js';
 import { superOnly } from '../middleware/auth.js';
-import { nid, log, fail, notFound, getSettings, syncCounters } from '../lib/core.js';
+import { nid, log, fail, notFound, getSettings, syncCounters, HttpError } from '../lib/core.js';
+import { feature, isDemo } from '../lib/config.js';
 import { body, check, oneOf } from '../lib/validate.js';
 import { exportAll, replaceAll } from '../services/data.js';
 import { buildSample } from '../services/sample.js';
 import { importDjjsBranches } from '../services/branches-import.js';
-import { ROLE_DEFAULTS, PAGE_KEYS, resolveRoles, VISIT_CAP_KEYS, VISIT_CAPS_DEFAULT, resolveVisitCaps } from '../../../shared/constants.js';
+import { ROLE_DEFAULTS, PAGE_KEYS, PERM_KEYS, resolveRoles, VISIT_CAP_KEYS, VISIT_CAPS_DEFAULT, resolveVisitCaps } from '../../../shared/constants.js';
 import { sameName, today } from '../../../shared/dates.js';
 import { personName, cleanText } from '../../../shared/text.js';
 import { normalizeAll } from '../services/data.js';
@@ -70,7 +71,7 @@ r.delete('/users/:id', async (req, res) => {
 r.put('/perms', async (req, res) => {
   const { role, page, value } = req.body || {};
   if (!ROLE_DEFAULTS[role] || role === 'superadmin') fail('Choose a valid role.');
-  if (!PAGE_KEYS.includes(page) || page === 'admin') fail('Choose a valid page.');
+  if (!PERM_KEYS.includes(page) || page === 'admin') fail('Choose a valid page.');
   if (!['', 'v', 'e'].includes(value)) fail('Choose View, Edit or none.');
   const s = await getSettings(), perms = s.perms ? { ...s.perms } : {};
   const cur = resolveRoles(s.perms);
@@ -115,6 +116,13 @@ r.delete('/lists/:k', async (req, res) => {
   await Settings.updateOne({ _id: 'app' }, { $pull: { ['lists.' + k]: k === 'shifts' ? { name: v } : v } });
   ok(res);
 });
+/* stay type from the number of days: up to shortMax = Short-Term, up to monthlyMax = Monthly, longer = Long-Term */
+r.put('/stay-rules', async (req, res) => {
+  const sm = Number((req.body || {}).shortMax), mm = Number((req.body || {}).monthlyMax);
+  if (!Number.isInteger(sm) || !Number.isInteger(mm) || sm < 1 || mm > 366 || sm >= mm) fail('Enter whole numbers of days: Short-Term limit at least 1, Monthly limit larger than it and at most 366.');
+  await Settings.updateOne({ _id: 'app' }, { $set: { 'lists.stayRules': { shortMax: sm, monthlyMax: mm } } });
+  await log(req.user, `Stay types: Short-Term up to ${sm} days, Monthly up to ${mm} days`); ok(res);
+});
 r.put('/lists/shifts', async (req, res) => {
   const name = String(req.query.name || ''), v = body(req, ['time']);
   const s = await Settings.updateOne({ _id: 'app', 'lists.shifts.name': name }, { $set: { 'lists.shifts.$.time': v.time } });
@@ -129,13 +137,19 @@ r.get('/export', async (req, res) => {
 r.post('/import', async (req, res) => { await replaceAll(req.body); await log(req.user, 'Backup imported'); ok(res); });
 r.post('/normalize', async (req, res) => { const n = await normalizeAll(); await log(req.user, `Data clean-up: ${n.total} record(s) tidied`); res.json(n); });
 r.post('/import-djjs-branches', async (req, res) => res.json(await importDjjsBranches(req.user)));
-r.post('/reset-sample', async (req, res) => { await replaceAll(buildSample()); await log(req.user, 'Reset to sample data'); ok(res); });
-r.post('/clear-people', async (req, res) => {
+/* Danger zone: only when switched on (always in DEMO mode), and only with "DELETE" typed by the admin. */
+function danger(req, res, next) {
+  if (!feature('dangerZone')) return next(new HttpError(403, 'This action is switched off on the live system. It is available in DEMO mode, or with FEATURES=dangerZone=on.'));
+  if ((req.body || {}).confirm !== 'DELETE') return next(new HttpError(400, 'Type DELETE to confirm.'));
+  next();
+}
+r.post('/reset-sample', danger, async (req, res) => { await replaceAll(buildSample({ demo: isDemo() })); await log(req.user, 'Reset to sample data'); ok(res); });
+r.post('/clear-people', danger, async (req, res) => {
   await Promise.all([Member.deleteMany({}), Registration.deleteMany({}), Allocation.deleteMany({}), Duty.deleteMany({}), Attendance.deleteMany({}), DATA_MODELS.visits.deleteMany({})]);
   await Bed.updateMany({}, { cleaning: false });
   await log(req.user, 'Cleared all members and visits'); ok(res);
 });
-r.post('/clear-all', async (req, res) => {
+r.post('/clear-all', danger, async (req, res) => {
   for (const M of Object.values(DATA_MODELS)) await M.deleteMany({});
   await Attendance.deleteMany({});
   await Settings.updateOne({ _id: 'app' }, { $set: { tomb: {} } });

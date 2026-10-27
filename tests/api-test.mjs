@@ -2,7 +2,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 const SERVER = new URL('../server/', import.meta.url).href;
 const { default: mongoose } = await import(SERVER + 'node_modules/mongoose/index.js');
-process.env.JWT_SECRET = 'test'; process.env.SEED_PASSWORD = 'Noormahal@123';
+process.env.JWT_SECRET = 'test'; process.env.SEED_PASSWORD = 'Noormahal@123'; process.env.FEATURES = 'dangerZone=on,arrivalNeedsBed=off'; // reset tool; and the older "arrive first, bed later" flow
 const { createApp, bootstrapData } = await import(SERVER + 'src/index.js');
 
 const mongo = await MongoMemoryServer.create();
@@ -32,7 +32,7 @@ try {
   ok((await call(null, 'GET', '/snapshot')).status === 401, 'snapshot needs login');
 
   // member create + duplicate
-  const m = { name: 'Test Person', mobile: '9876500001', dob: '1990-01-01', gender: 'Male', branchId: 'BR003', type: 'Short-Term', state: 'Punjab', district: 'Ludhiana', address: 'X', emName: 'Y', emPhone: '9876500002', emRel: 'Friend' };
+  const m = { name: 'Harjeet Singh', mobile: '9876500001', dob: '1990-01-01', gender: 'Male', branchId: 'BR003', type: 'Short-Term', state: 'Punjab', district: 'Ludhiana', address: 'Village Rampur, Ludhiana', emName: 'Ram Lal', emPhone: '9876500002', emRel: 'Friend' };
   const mc = await call(C, 'POST', '/members', m); ok(mc.status === 200 && mc.data.id.startsWith('NM-'), 'coordinator creates member ' + mc.data.id);
   ok((await call(C, 'POST', '/members', m)).data.error?.includes('already exists'), 'duplicate mobile blocked');
   ok((await call(C, 'POST', '/members', { ...m, mobile: '9876500003', branchId: 'BR001' })).status === 403, 'coordinator cannot add to another branch');
@@ -81,7 +81,7 @@ try {
   const exp = (await call(A, 'GET', '/admin/export')).data;
   ok(exp.v === 1 && exp.members.length === 61, 'export in prototype format');
   ok((await call(A, 'POST', '/admin/import', exp)).status === 200, 'import round-trips');
-  ok((await call(A, 'POST', '/admin/reset-sample')).status === 200 && (await call(A, 'GET', '/snapshot')).data.members.length === 60, 'reset to sample');
+  ok((await call(A, 'POST', '/admin/reset-sample', { confirm: 'DELETE' })).status === 200 && (await call(A, 'GET', '/snapshot')).data.members.length === 60, 'reset to sample');
   const nu = await call(A, 'POST', '/admin/users', { name: 'New', username: 'newuser', password: 'longpassword', role: 'reception' });
   ok(nu.status === 200 && !!(await login('newuser') || true), 'admin creates user ' + nu.data.id);
 } catch (e) { console.error(e); fails++; }

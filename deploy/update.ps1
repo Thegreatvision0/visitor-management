@@ -5,6 +5,7 @@ $Root = Split-Path -Parent $PSScriptRoot
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'backup.ps1')   # backup before every update
 Push-Location $Root
 try {
+  npm install --prefix shared --omit=dev --no-audit --no-fund; if ($LASTEXITCODE) { throw 'shared install failed' }
   npm install --prefix server --omit=dev --no-audit --no-fund; if ($LASTEXITCODE) { throw 'server install failed' }
   npm install --prefix client --no-audit --no-fund; if ($LASTEXITCODE) { throw 'client install failed' }
   npm run build; if ($LASTEXITCODE) { throw 'build failed - the running version was not changed' }

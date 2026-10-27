@@ -1,5 +1,6 @@
 import { useApp } from '../context.jsx';
-import { PageHead, PBtn, Btn, Table, Badge, Tabs, useTab, FInput, FSelect, AttPct } from '../components/ui.jsx';
+import { PageHead, PBtn, Btn, Table, Badge, Tabs, useTab, FInput, FSelect, AttPct, RowMenu } from '../components/ui.jsx';
+import { archiveAsk } from '../components/Modal.jsx';
 import { fd, fdt, today } from '@shared/dates.js';
 import { stayEnd } from '@shared/constants.js';
 import { ATT } from '@shared/constants.js';
@@ -19,7 +20,12 @@ export default function Departments() {
   if (tab === 'o') b = <div className="grid g4">{data.depts.filter(x => !sup || x.id === me.deptId).map(x => (
     <div key={x.id} className="stat click" role="button" tabIndex={0} title="Open assignments" onClick={() => openDept(x.id, 'a')} onKeyDown={e => { if (e.key === 'Enter') openDept(x.id, 'a'); }}><div className="l">{x.name}{x.active ? '' : ' (inactive)'}</div><div className="v">{data.duties.filter(u => u.deptId === x.id && u.status === 'Active').length}</div><div className="s">Supervisor: {x.supervisor}</div>
       <div className="s" onClick={e => e.stopPropagation()}><a href="#" onClick={e => { e.preventDefault(); openDept(x.id, 'a'); }}>Assignments →</a> · <a href="#" onClick={e => { e.preventDefault(); openDept(x.id, 't'); }}>Attendance →</a></div>
-      {manage ? <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}><Btn onClick={() => deptEdit(app, x.id)}>Edit</Btn> <Btn cls="dng" onClick={() => deptDelete(app, x.id)}>Delete</Btn></div> : null}</div>))}</div>;
+      {manage ? <div style={{ marginTop: 8 }} className="rowacts" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}><Btn cls="a-edit" onClick={() => deptEdit(app, x.id)}>Edit</Btn>
+        <RowMenu items={[app.feature('archive') && { label: 'Archive department…', on: () => archiveAsk(app, { title: `Archive department — ${x.name}`, note: 'Past duties and attendance keep the department name.', path: `/depts/${x.id}/archive`, done: `${x.name} archived` }) },
+          { label: 'Delete department…', danger: true, on: () => deptDelete(app, x.id) }]} /></div> : null}</div>))}</div>;
+  if (tab === 'o' && manage && D.archivedDepts().length) b = <>{b}<h3 style={{ marginTop: 18 }}>Archived departments</h3>
+    <Table rows={D.archivedDepts()} cols={[['Department', x => <b>{x.name}</b>], ['Supervisor', x => x.supervisor], ['Archived', x => <>{fdt(x.archived.on)}<br /><small>by {x.archived.by}{x.archived.reason ? ' — ' + x.archived.reason : ''}</small></>],
+      ['', x => <Btn cls="ok" onClick={() => app.run(() => app.api.post(`/depts/${x.id}/restore`), `${x.name} restored`)}>Restore</Btn>]]} /></>;
   if (tab === 'a') {
     const q = (f['du.q'] || '').toLowerCase(), dp = f['du.dp'], sh = f['du.sh'];
     const L = data.duties.filter(d => d.status === 'Active' && D.reg(d.regId) && mine(d) && (!dp || d.deptId === dp) && (!sh || d.shift === sh) && (!q || (D.mName(d.memberId) + d.memberId).toLowerCase().includes(q)));

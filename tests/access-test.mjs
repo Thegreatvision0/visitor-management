@@ -69,7 +69,7 @@ try {
   ok(!s3.allocs.some(a => a.regId === inv.data.id && a.active) && al.every(a => s3.beds.find(b => b.id === a.bedId).cleaning), 'on exit the beds are released and marked for cleaning');
   // cancel releases reserved beds
   const inv2 = await call(S, 'POST', '/visits', {});
-  await call(null, 'POST', '/public/visits/' + inv2.data.token, { name: 'Guest Two', mobile: '9876543211', meetWith: 'Navdeep Sharma', deptName: 'Security', date: d(5), time: '10:00', purpose: 'x' });
+  await call(null, 'POST', '/public/visits/' + inv2.data.token, { name: 'Guest Two', mobile: '9876543211', meetWith: 'Navdeep Sharma', deptName: 'Security', date: d(5), time: '10:00', purpose: 'Seva during programme' });
   await call(S, 'POST', `/visits/${inv2.data.id}/incharge`, { accept: true, date: d(5), time: '10:00' });
   const room2 = (await call(S, 'GET', `/visits/bed-availability?from=${d(5)}&to=${d(6)}`)).data[0];
   await call(S, 'POST', `/visits/${inv2.data.id}/finalize`, { stayNeeded: true, stayFrom: d(5), stayTo: d(6), stayBeds: 1, stayRoom: room2.roomId });

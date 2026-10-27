@@ -51,13 +51,20 @@ export const defaultLists = () => ({ states: STATES_DEF.slice(), rels: RELS_DEF.
 /* Page keys in sidebar order. */
 export const PAGE_KEYS = ['dashboard', 'members', 'branches', 'prereg', 'approvals', 'reception', 'accommodation', 'departments', 'longterm', 'visitors', 'reports', 'admin'];
 
+/* Permissions that are not pages, edited in the same Admin → Roles & access table. */
+export const EXTRA_PERMS = [['mobiles', 'See mobile numbers']];
+export const PERM_KEYS = PAGE_KEYS.concat(EXTRA_PERMS.map(x => x[0]));
+/** 9876543280 → 98XXXXX280 (for roles without "See mobile numbers") */
+export const maskMobile = m => { const d = String(m || ''); return d.length >= 6 ? d.slice(0, 2) + 'X'.repeat(d.length - 5) + d.slice(-3) : d; };
+export const isMasked = m => /X/.test(String(m || ''));
+
 /* Role → page access. e = view + edit, v = view only. Enforced by the API. */
 export const ROLE_DEFAULTS = {
-  superadmin: { label: 'Super Admin / IT Admin', pages: { dashboard: 'e', members: 'e', branches: 'e', prereg: 'e', approvals: 'e', reception: 'e', accommodation: 'e', departments: 'e', longterm: 'e', visitors: 'e', reports: 'e', admin: 'e' } },
-  manager: { label: 'Nurmahal Sewadar Manager', pages: { dashboard: 'e', members: 'e', branches: 'e', prereg: 'e', approvals: 'e', reception: 'v', accommodation: 'v', departments: 'e', longterm: 'e', visitors: 'e', reports: 'v' } },
-  coordinator: { label: 'Branch Coordinator', pages: { dashboard: 'v', members: 'e', branches: 'e', prereg: 'e', longterm: 'v', reports: 'v' } },
-  reception: { label: 'Reception Staff', pages: { dashboard: 'v', members: 'e', prereg: 'v', reception: 'e', accommodation: 'v', departments: 'v', visitors: 'e', reports: 'v' } },
-  accom: { label: 'Accommodation Manager', pages: { dashboard: 'v', members: 'v', reception: 'v', accommodation: 'e', longterm: 'v', visitors: 'v', reports: 'v' } },
+  superadmin: { label: 'Super Admin / IT Admin', pages: { mobiles: 'v', dashboard: 'e', members: 'e', branches: 'e', prereg: 'e', approvals: 'e', reception: 'e', accommodation: 'e', departments: 'e', longterm: 'e', visitors: 'e', reports: 'e', admin: 'e' } },
+  manager: { label: 'Nurmahal Sewadar Manager', pages: { mobiles: 'v', dashboard: 'e', members: 'e', branches: 'e', prereg: 'e', approvals: 'e', reception: 'v', accommodation: 'v', departments: 'e', longterm: 'e', visitors: 'e', reports: 'v' } },
+  coordinator: { label: 'Branch Coordinator', pages: { mobiles: 'v', dashboard: 'v', members: 'e', branches: 'e', prereg: 'e', longterm: 'v', reports: 'v' } },
+  reception: { label: 'Reception Staff', pages: { mobiles: 'v', dashboard: 'v', members: 'e', prereg: 'v', reception: 'e', accommodation: 'v', departments: 'v', visitors: 'e', reports: 'v' } },
+  accom: { label: 'Accommodation Manager', pages: { mobiles: 'v', dashboard: 'v', members: 'v', reception: 'v', accommodation: 'e', longterm: 'v', visitors: 'v', reports: 'v' } },
   supervisor: { label: 'Department Head / In-charge', pages: { dashboard: 'v', departments: 'e', visitors: 'e', reports: 'v' } },
   viewer: { label: 'Management / Report Viewer', pages: { dashboard: 'v', branches: 'v', accommodation: 'v', longterm: 'v', visitors: 'v', reports: 'v' } },
   office: { label: 'Main Office (guest approvals)', pages: { dashboard: 'v', visitors: 'e', reports: 'v' } },
@@ -88,4 +95,5 @@ export const isMobile = v => /^[6-9]\d{9}$/.test(v);
 /* Stay type follows the length of the stay: up to 10 days Short-Term, 11–30 days Monthly, 31+ days Long-Term. */
 export const SHORT_MAX_DAYS = 10, MONTHLY_MAX_DAYS = 30;
 export const stayDays = (from, to) => Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 864e5) + 1;
-export const stayTypeFor = (from, to) => { const n = stayDays(from, to); return n <= SHORT_MAX_DAYS ? 'Short-Term' : n <= MONTHLY_MAX_DAYS ? 'Monthly' : 'Long-Term'; };
+/** rules: { shortMax, monthlyMax } from Admin → Lists & options (defaults 10 / 30) */
+export const stayTypeFor = (from, to, rules) => { const n = stayDays(from, to), sm = (rules && rules.shortMax) || SHORT_MAX_DAYS, mm = (rules && rules.monthlyMax) || MONTHLY_MAX_DAYS; return n <= sm ? 'Short-Term' : n <= mm ? 'Monthly' : 'Long-Term'; };

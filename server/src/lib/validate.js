@@ -1,5 +1,6 @@
 import { fail } from './core.js';
 import { isMobile } from '../../../shared/constants.js';
+import { firstIssue } from '../../../shared/schemas.js';
 
 /** Pick and trim the listed string fields from a request body. */
 export function body(req, keys) {
@@ -18,3 +19,6 @@ export const oneOf = (v, list, label) => { if (v && !list.includes(v)) fail(`Cho
 const DATE = /^\d{4}-\d{2}-\d{2}$/, DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 export const isDate = (v, label) => { if (v && !DATE.test(v)) fail(`${label} must be a date.`); };
 export const isDateTime = (v, label) => { if (v && !DT.test(v)) fail(`${label} must be a date and time.`); };
+
+/** Validate with a shared Zod schema; the first problem becomes the error shown to the user. */
+export function zfail(schema, v) { const i = firstIssue(schema, v); if (i) fail(i.message); }

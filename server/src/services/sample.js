@@ -5,7 +5,7 @@ import { defaultLists, PURPOSES, RELS_DEF, SHIFTS_DEF } from '../../../shared/co
 
 function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-export function buildSample() {
+export function buildSample({ demo = false } = {}) {
   const rnd = mulberry32(20261009), pick = a => a[Math.floor(rnd() * a.length)], ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const t = today(), d = n => addDays(t, n);
   const seq = {}, nid = (k, pre, len) => { seq[k] = (seq[k] || 0) + 1; return pre + pad(seq[k], len); };
@@ -117,11 +117,38 @@ export function buildSample() {
     const r = mkReg(M[i], { status: 'Rejected', arrival: d(2), departure: d(6), remarks: i === 56 ? 'Dates clash with a major event; kindly re-apply after the 20th.' : 'Please attach coordinator confirmation and re-submit.', createdOn: d(-4) });
     H(r, [[d(-4) + 'T10:00', 'Branch Coordinator', 'Pre-registration created'], [d(-4) + 'T11:00', 'Branch Coordinator', 'Submitted for approval'], [d(-3) + 'T14:00', 'Sewadar Manager', 'Rejected — ' + r.remarks]]);
   }
-  DB.log.push({ at: t + 'T00:00', by: 'System', text: 'Sample data loaded' });
+  /* E) DEMO mode only: guest visits in every step, so the Guest Visits screens are populated */
+  if (demo) {
+    const tok = () => Array.from({ length: 32 }, () => '0123456789abcdef'[ri(0, 15)]).join('');
+    const G = [['Dr. Raman Arora', 'PGI Chandigarh', 'Submitted', 2, '11:00', 'Car', 'PB65AK2210', '', '', false],
+      ['Smt. Kavita Bedi', 'Rotary Club Jalandhar', 'Accepted', 1, '15:00', 'SUV / Jeep', 'PB08DX4471', '', '', false],
+      ['Sh. Anil Khanna', 'District Administration', 'Awaiting office', 1, '10:30', 'Car', 'PB10HK1234', 'Baikunth Dwar', 'Office 2', true],
+      ['Prof. Neha Sethi', 'GNDU Amritsar', 'Confirmed', 0, '12:00', 'Car', 'PB02CQ7781', 'Abhinandan Dwar', 'Office 3', false],
+      ['Sh. Harpal Grewal', 'Punjab Police', 'Arrived', 0, '09:30', 'Car', 'PB01A0001', 'Baikunth Dwar', 'Office 4', true],
+      ['Mrs. Rekha Joshi', 'Sewa Samiti Ludhiana', 'Completed', -1, '16:00', 'No vehicle', '', '', '', false]];
+    DB.visits = G.map(([name, org, status, day, time, vt, vno, parking, office, cart], i) => {
+      const dp = DB.depts[i % 3], at = d(day) + 'T' + time, veh = vt !== 'No vehicle';
+      const h = [[d(day - 3) + 'T10:00', 'Reception Staff', 'Invitation created'], ...(status !== 'Invited' ? [[d(day - 2) + 'T11:00', name + ' (guest)', 'Guest registered']] : [])];
+      return { id: 'GV-' + pad(i + 1, 4), token: tok(), tokenExpires: d(day + 14), status, hostId: 'u5', hostName: 'Reception Staff', deptId: dp.id, deptName: dp.name, meetWith: dp.supervisor,
+        guest: { name, mobile: mob(), organisation: org, city: 'Punjab', people: ri(1, 3), purpose: 'Meeting regarding seva programme' },
+        date: d(day), time, duration: 60, vehicle: { has: veh, type: veh ? vt : '', number: vno, preferred: '' }, parking, office, golfCart: cart, cartNote: cart ? 'Car 1' : '',
+        inchargeName: ['Submitted'].includes(status) ? '' : dp.supervisor,
+        approval: ['Confirmed', 'Arrived', 'Completed'].includes(status) && (office || parking === 'Baikunth Dwar') ? { needed: true, by: 'Main Office', user: 'Main Office', at: d(day - 1) + 'T12:00', remarks: '', parking, office } : undefined,
+        entryAt: ['Arrived', 'Completed'].includes(status) ? at : '', entryBy: ['Arrived', 'Completed'].includes(status) ? 'Abhinandan Dwar Security' : '',
+        exitAt: status === 'Completed' ? d(day) + 'T17:30' : '', exitBy: status === 'Completed' ? 'Abhinandan Dwar Security' : '', gateRemarks: '',
+        history: h.map(([a, by, text]) => ({ at: a, by, text })), createdOn: d(day - 3) + 'T10:00', demo: true };
+    });
+  }
+  DB.log.push({ at: t + 'T00:00', by: 'System', text: demo ? 'DEMO data loaded' : 'Sample data loaded' });
   return DB;
 }
 
 /* Demo sign-in accounts (password from SEED_PASSWORD). */
+/* DEMO mode adds the Main Office and gate accounts so every Guest Visits step can be tried */
+export const DEMO_EXTRA_USERS = [
+  { id: 'u9', username: 'mainoffice', name: 'Main Office', role: 'office' },
+  { id: 'u10', username: 'gate', name: 'Abhinandan Dwar Security', role: 'security' }
+];
 export const DEMO_USERS = [
   { id: 'u1', username: 'admin', name: 'IT Admin', role: 'superadmin' },
   { id: 'u2', username: 'manager', name: 'Sewadar Manager', role: 'manager' },

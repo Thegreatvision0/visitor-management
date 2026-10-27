@@ -11,6 +11,8 @@ import { ensureDemoUsers, isEmpty, replaceAll, snapshot, ensureAllStates } from 
 import { markRead } from './services/notify.js';
 import { securityHeaders, productionChecks, lanUrls, isProd } from './lib/security.js';
 import { buildSample } from './services/sample.js';
+import { isDemo, dbOptions, features } from './lib/config.js';
+import { runMigrations } from './migrations/index.js';
 import authRoutes from './routes/auth.js';
 import peopleRoutes from './routes/people.js';
 import regRoutes from './routes/regs.js';
@@ -30,7 +32,8 @@ export function createApp() {
   app.use(express.json({ limit: '2mb' }));
   app.use('/api', serialWrites);
 
-  app.get('/api/health', (req, res) => res.json({ ok: true }));
+  app.get('/api/health', (req, res) => res.json({ ok: true, db: mongoose.connection.readyState === 1 ? 'up' : 'down' }));
+  app.get('/api/meta', (req, res) => res.json({ demo: isDemo(), features: features() })); // before sign-in: DEMO ribbon and feature switches
   app.use('/api/auth', authRoutes);
   app.use('/api/public', publicRoutes); // guest registration links — no sign-in
   app.use('/api', authenticate);
@@ -75,10 +78,12 @@ export function createApp() {
 
 export async function bootstrapData() {
   await getSettings();
+  await runMigrations();
   await ensureAllStates();
-  if (process.env.SEED_ON_EMPTY !== 'false' && await isEmpty()) {
-    await replaceAll(buildSample());
-    console.log('Database was empty — sample data loaded.');
+  /* DEMO mode always fills its (separate) database; otherwise only when SEED_ON_EMPTY allows it */
+  if ((isDemo() || process.env.SEED_ON_EMPTY !== 'false') && await isEmpty()) {
+    await replaceAll(buildSample({ demo: isDemo() }));
+    console.log(isDemo() ? 'DEMO database was empty — demo data loaded.' : 'Database was empty — sample data loaded.');
   }
   if (await ensureDemoUsers()) console.log(`Demo users created (password: ${process.env.SEED_PASSWORD || 'Noormahal@123'}). See README.`);
 }
@@ -88,8 +93,8 @@ if (isMain) {
   if (!process.env.JWT_SECRET) { console.error('JWT_SECRET is not set. Copy server/.env.example to server/.env.'); process.exit(1); }
   productionChecks();
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/noormahal';
-  await mongoose.connect(uri);
-  console.log('MongoDB connected');
+  await mongoose.connect(uri, dbOptions());
+  console.log(isDemo() ? `MongoDB connected — DEMO mode, database "${mongoose.connection.name}"` : 'MongoDB connected');
   await bootstrapData();
   const port = Number(process.env.PORT) || 5000;
   createApp().listen(port, () => {

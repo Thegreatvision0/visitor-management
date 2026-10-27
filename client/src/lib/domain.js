@@ -9,7 +9,8 @@ export const perfRating = pct => pct == null ? '—' : pct >= 90 ? 'Excellent' :
 
 export function makeDomain(data, me) {
   const idx = list => new Map(list.map(x => [x.id, x]));
-  const M = idx(data.members), R = idx(data.regs), B = idx(data.branches), DP = idx(data.depts);
+  const A = data.archived || { branches: [], depts: [], regs: [] }; // archived ones still resolve by id (names in history)
+  const M = idx(data.members), R = idx(data.regs.concat(A.regs)), B = idx(data.branches.concat(A.branches)), DP = idx(data.depts.concat(A.depts));
   const BD = idx(data.beds), RM = idx(data.rooms), BL = idx(data.buildings), ST = idx(data.sites);
   const aByReg = new Map(), dByReg = new Map();
   data.allocs.forEach(a => { if (a.active) aByReg.set(a.regId, a); });
@@ -64,6 +65,8 @@ export function makeDomain(data, me) {
   const memberStatus = m => { for (const s of ['Checked In', 'Approved', 'Submitted']) { if (data.regs.some(r => r.memberId === m.id && r.status === s)) return s === 'Checked In' ? 'Resident' : s; } return ''; };
   /** Member Master status: Resident (checked in now), Departed (has left after a stay), Not arrived (never stayed / not yet arrived). */
   const residency = m => { const rs = data.regs.filter(r => r.memberId === m.id); return rs.some(r => r.status === 'Checked In') ? 'Resident' : rs.some(r => r.status === 'Checked Out') ? 'Departed' : 'Not arrived'; };
+  /** Has this member ever stayed? (such members are never erased, only archived) */
+  const hasStayed = mid => data.regs.concat(A.regs).some(r => r.memberId === mid && r.actualIn);
   const liveReg = mid => data.regs.find(r => r.memberId === mid && LIVE.includes(r.status));
 
   /* sewa & attendance */
@@ -97,10 +100,11 @@ export function makeDomain(data, me) {
   const SHIFT_LBL = {}; L.shifts.forEach(x => { SHIFT_LBL[x.name] = x.time ? `${x.name} (${x.time})` : x.name; });
   const shiftLbl = x => SHIFT_LBL[x] || x;
 
+  const feature = k => !!(data.features || {})[k];
   return {
-    data, me, role, roles: data.roles, member, reg, branch, dept, bedO, room, bldg, site, bName, dName, mName,
+    feature, demo: !!data.demo, data, me, role, roles: data.roles, member, reg, branch, dept, bedO, room, bldg, site, bName, dName, mName,
     activeAlloc, activeDuty, bedShort, bedPath, allocBedText, can, canEdit, hasCap, vcaps, canDept, canEditMember, isMgmt, family, inScope,
-    regs, members, allMembers, archivedMembers, residency, roomsIn, bedsIn, bedStates, conflicts, memberStatus, liveReg, dutyOn, attStatus, attPct, onSite, memberAtt, submittedAt, lastActivity, branchLabel,
+    regs, members, allMembers, archivedMembers, residency, hasStayed, archivedRegs: () => A.regs, archivedBranches: () => A.branches, archivedDepts: () => A.depts, roomsIn, bedsIn, bedStates, conflicts, memberStatus, liveReg, dutyOn, attStatus, attPct, onSite, memberAtt, submittedAt, lastActivity, branchLabel,
     branchOpts, deptOpts, STATES, RELS, SHIFTS, shiftLbl, stayStart, stayEnd
   };
 }

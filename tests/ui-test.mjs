@@ -57,8 +57,8 @@ try {
   ok((await page.locator('.toast.ok').first().textContent()).includes('Member created'), 'member created via form');
   // validation error from server shows in form
   await page.click('button:has-text("+ Add member")');
-  await page.fill('#f-name', 'Dup'); await page.fill('#f-mobile', '9123456780'); await page.fill('#f-dob', '1991-05-05'); await page.selectOption('#f-gender', 'Male'); await page.selectOption('#f-branchId', { label: 'Ludhiana' });
-  await page.fill('#f-address', 'x'); await page.fill('#f-emName', 'x'); await page.fill('#f-emPhone', '9123456781');
+  await page.fill('#f-name', 'Dup Person'); await page.fill('#f-mobile', '9123456780'); await page.fill('#f-dob', '1991-05-05'); await page.selectOption('#f-gender', 'Male'); await page.selectOption('#f-branchId', { label: 'Ludhiana' });
+  await page.fill('#f-address', 'Village Rampur, Ludhiana'); await page.fill('#f-emName', 'Ram Lal'); await page.fill('#f-district', 'Ludhiana'); await page.fill('#f-emPhone', '9123456781');
   await page.click('.mdl button:has-text("Create member")'); await page.waitForSelector('.mdl .err');
   ok((await page.textContent('.mdl .err')).includes('already exists'), 'server duplicate error shown in form');
   await closeModal(page);
