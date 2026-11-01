@@ -22,7 +22,7 @@ function boot() {
 function reason(e) {
   const m = String(e && e.message || '');
   if (/^Missing environment|^JWT_SECRET/.test(m)) return m + ' (Vercel → Settings → Environment Variables, then redeploy).';
-  if (/bad auth|Authentication failed|auth.*fail/i.test(m)) return 'MongoDB Atlas rejected the user name or password in MONGODB_URI.';
+  if (/bad auth|Authentication failed|auth.*fail/i.test(m)) return 'MongoDB Atlas rejected the user name or password in MONGODB_URI. — ' + shape(process.env.MONGODB_URI);
   if (/whitelist|access list|timed out|Server selection/i.test(m)) return 'MongoDB Atlas did not answer — in Atlas → Network Access allow 0.0.0.0/0.';
   if (/ENOTFOUND|querySrv|ENODATA/i.test(m)) return 'The cluster address in MONGODB_URI was not found — copy it again from Atlas.';
   if (/Invalid scheme|Invalid connection string|URI must|Password contains|Username contains/i.test(m)) return 'MONGODB_URI is not a valid MongoDB address.';
